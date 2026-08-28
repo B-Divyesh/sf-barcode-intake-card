@@ -30,7 +30,7 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
   await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v5.js')))).toBe(true);
 });
 
-test('@claim:local-only keeps item data in this browser without an account or sync', async ({ page }) => {
+test('@claim:local-only keeps cards, chosen CSV rows, and photos in this browser without an account or sync', async ({ page }) => {
   const outside: string[] = [];
   page.on('request', (request) => {
     if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outside.push(request.url());
@@ -43,7 +43,14 @@ test('@claim:local-only keeps item data in this browser without an account or sy
   await page.getByRole('button', { name: 'Save item card' }).click();
   await expect(page.getByText('Local test item')).toBeVisible();
   await page.goto('/records');
+  await page.reload();
   await expect(page.getByText('LOCAL-1')).toBeVisible();
+  await page.getByRole('link', { name: 'Edit card' }).click();
+  await expect(page.getByLabel('Item name')).toHaveValue('Local test item');
+  await expect(page.getByLabel('Supplier')).toHaveValue('Private Supply');
+  await expect(page.getByLabel('Location note')).toHaveValue('Bench 5');
+  await expect(page.getByLabel('Quantity')).toHaveValue('3');
+  await expect(page.locator('#photo-preview')).toHaveAttribute('src', /^data:image\/jpeg/);
   await expect(page.getByRole('link', { name: /sign in|log in|create account/i })).toHaveCount(0);
   expect(outside).toEqual([]);
 });
@@ -76,12 +83,14 @@ test('@claim:duplicate-review shows saved cards with the same barcode', async ({
 
 test('@claim:csv-lookup fills fields from a chosen supplier CSV', async ({ page }) => {
   await page.goto('/intake');
-  await page.getByLabel('Choose CSV').setInputFiles({ name: 'supplier.csv', mimeType: 'text/csv', buffer: Buffer.from('barcode,name,supplier,location,quantity\n3210009,M6 flange nut,Acme Trade,Rack 7,25') });
+  await page.getByLabel('Choose CSV').setInputFiles({ name: 'supplier.csv', mimeType: 'text/csv', buffer: Buffer.from('barcode,name,supplier,location,quantity\n3210009,M6 flange nut,Acme Trade,Rack 7,0') });
   await expect(page.getByText('1 lookup rows are ready')).toBeVisible();
   await page.getByLabel('Barcode or SKU').fill('3210009');
   await page.getByLabel('Barcode or SKU').press('Tab');
   await expect(page.getByLabel('Item name')).toHaveValue('M6 flange nut');
+  await expect(page.getByLabel('Supplier')).toHaveValue('Acme Trade');
   await expect(page.getByLabel('Location note')).toHaveValue('Rack 7');
+  await expect(page.getByLabel('Quantity')).toHaveValue('0');
 });
 
 test('@claim:csv-export exports one row per demo card', async ({ page }) => {

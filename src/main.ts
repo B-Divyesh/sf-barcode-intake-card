@@ -245,7 +245,8 @@ async function checkBarcode(): Promise<void> {
   if (csv) {
     for (const name of ['name', 'supplier', 'location', 'quantity'] as const) {
       const field = document.querySelector<HTMLInputElement>(`#${name}`);
-      if (field && !field.value && csv[name]) field.value = String(csv[name]);
+      const isUntouchedDefaultQuantity = name === 'quantity' && field?.value === '1';
+      if (field && (!field.value || isUntouchedDefaultQuantity) && csv[name] !== undefined && String(csv[name]).length > 0) field.value = String(csv[name]);
     }
     const status = document.querySelector('#form-status');
     if (status) status.textContent = 'A supplier CSV row matched. Review the filled fields.';
