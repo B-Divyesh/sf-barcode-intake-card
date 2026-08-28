@@ -1,12 +1,13 @@
 import './style.css';
-import { clearItems, getItem, getItems, removeItem, saveItem, seedDemo } from './db';
+import { clearItems, getItem, getItems, removeItem, saveItem, saveItemsAtomic, seedDemo } from './db';
 import { itemsToCsv, parseCsv } from './csv';
 import type { CsvMatch, IntakeItem } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.2';
+const BUILD = 'v1.0.3';
+const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
 let scannerStop: (() => void) | undefined;
@@ -101,7 +102,7 @@ async function intakePage(): Promise<string> {
       <form id="intake-form" novalidate>
         <input type="hidden" name="id" value="${escapeHtml(existing?.id ?? '')}">
         <div class="field-grid">
-          <div class="field full"><label for="barcode">Barcode or SKU <span aria-hidden="true">*</span></label><div class="barcode-entry"><input id="barcode" name="barcode" inputmode="numeric" autocomplete="off" required value="${escapeHtml(existing?.barcode ?? '')}" aria-describedby="barcode-help"><button class="button button-secondary" type="button" data-action="scan">Scan with camera</button></div><small id="barcode-help">Use any letters or numbers printed on the item.</small></div>
+          <div class="field full"><label for="barcode">Barcode or SKU <span aria-hidden="true">*</span></label><div class="barcode-entry"><input id="barcode" name="barcode" autocomplete="off" required value="${escapeHtml(existing?.barcode ?? '')}" aria-describedby="barcode-help"><button class="button button-secondary" type="button" data-action="scan">Scan with camera</button></div><small id="barcode-help">Use English letters, numbers, spaces, or standard punctuation. This barcode format cannot print other scripts.</small></div>
           <div class="field full" id="duplicates" aria-live="polite"></div>
           <div class="field"><label for="name">Item name <span aria-hidden="true">*</span></label><input id="name" name="name" required value="${escapeHtml(existing?.name ?? '')}"></div>
           <div class="field"><label for="supplier">Supplier</label><input id="supplier" name="supplier" value="${escapeHtml(existing?.supplier ?? '')}"></div>
@@ -134,7 +135,7 @@ async function printPage(id: string): Promise<string> {
   const item = await getItem(isDemo(), id);
   if (!item) return notFound();
   setMeta(`Print ${item.name} — Barcode Intake Card`, 'Print one item card with its barcode and location.', `/print/${id}`);
-  return shell(`<main id="main"><div class="page"><div class="print-controls app-header"><div><p class="eyebrow">Print proof</p><h1 tabindex="-1">Print one item card</h1></div><div class="toolbar"><button class="button" data-action="print">Print card</button><a class="button button-secondary" href="/records${demoSuffix()}" data-link>Back to cards</a></div></div><article class="print-card"><p class="eyebrow">Intake card</p><h2>${escapeHtml(item.name)}</h2><div class="barcode-svg"><canvas id="print-barcode" role="img" aria-label="Barcode ${escapeHtml(item.barcode)}"></canvas></div><dl><dt>Code</dt><dd class="record-code">${escapeHtml(item.barcode)}</dd><dt>Location</dt><dd>${escapeHtml(item.location)}</dd><dt>Quantity</dt><dd>${item.quantity}</dd>${item.supplier ? `<dt>Supplier</dt><dd>${escapeHtml(item.supplier)}</dd>` : ''}${item.notes ? `<dt>Notes</dt><dd>${escapeHtml(item.notes)}</dd>` : ''}</dl></article></div></main>`, 'records');
+  return shell(`<main id="main"><div class="page"><div class="print-controls app-header"><div><p class="eyebrow">Print proof</p><h1 tabindex="-1">Print one item card</h1></div><div class="toolbar"><button class="button" data-action="print">Print card</button><a class="button button-secondary" href="/records${demoSuffix()}" data-link>Back to cards</a></div></div><div class="notice barcode-error" id="barcode-render-status" role="alert" hidden><p>This code cannot be printed as a Code 128 barcode. Use English letters, numbers, spaces, or standard punctuation.</p><a class="button button-secondary" href="/intake?edit=${encodeURIComponent(item.id)}${isDemo() ? '&demo=1' : ''}" data-link>Edit this card</a></div><article class="print-card"><p class="eyebrow">Intake card</p><h2>${escapeHtml(item.name)}</h2><div class="barcode-svg"><canvas id="print-barcode" role="img" aria-label="Barcode ${escapeHtml(item.barcode)}"></canvas></div><dl><dt>Code</dt><dd class="record-code">${escapeHtml(item.barcode)}</dd><dt>Location</dt><dd>${escapeHtml(item.location)}</dd><dt>Quantity</dt><dd>${item.quantity}</dd>${item.supplier ? `<dt>Supplier</dt><dd>${escapeHtml(item.supplier)}</dd>` : ''}${item.notes ? `<dt>Notes</dt><dd>${escapeHtml(item.notes)}</dd>` : ''}</dl></article></div></main>`, 'records');
 }
 
 function privacyPage(): string {
@@ -185,7 +186,10 @@ async function render(moveFocus = false): Promise<void> {
 
 function bindPage(): void {
   document.querySelector('#intake-form')?.addEventListener('submit', saveForm);
-  document.querySelector('#barcode')?.addEventListener('change', checkBarcode);
+  const barcode = document.querySelector<HTMLInputElement>('#barcode');
+  barcode?.addEventListener('input', validateBarcode);
+  barcode?.addEventListener('change', checkBarcode);
+  if (barcode) validateBarcode({ currentTarget: barcode } as unknown as Event);
   document.querySelector('#photo')?.addEventListener('change', loadPhoto);
   document.querySelector('#csv-file')?.addEventListener('change', loadCsv);
   document.querySelector('#record-search')?.addEventListener('input', filterRecords);
@@ -201,7 +205,13 @@ function bindPage(): void {
 async function saveForm(event: Event): Promise<void> {
   event.preventDefault();
   const form = event.currentTarget as HTMLFormElement;
-  if (!form.reportValidity()) return;
+  const barcode = form.elements.namedItem('barcode') as HTMLInputElement | null;
+  if (barcode) validateBarcode({ currentTarget: barcode } as unknown as Event);
+  if (!form.reportValidity()) {
+    const status = document.querySelector('#form-status');
+    if (status) status.textContent = barcode?.validationMessage || 'Check the required fields, then try again.';
+    return;
+  }
   const data = new FormData(form);
   const existingId = String(data.get('id') ?? '');
   const old = existingId ? await getItem(isDemo(), existingId) : undefined;
@@ -218,6 +228,12 @@ async function saveForm(event: Event): Promise<void> {
     const status = document.querySelector('#form-status');
     if (status) status.textContent = 'The card could not be saved. Free browser storage, then try again.';
   }
+}
+
+function validateBarcode(event: Event): void {
+  const input = event.currentTarget as HTMLInputElement;
+  const code = input.value.trim();
+  input.setCustomValidity(code && !PRINTABLE_CODE.test(code) ? 'Use English letters, numbers, spaces, or standard punctuation. This barcode format cannot print other scripts.' : '');
 }
 
 async function checkBarcode(): Promise<void> {
@@ -305,7 +321,10 @@ async function openScanner(): Promise<void> {
     const controls = await reader.decodeFromVideoDevice(undefined, video, (result) => {
       if (!result) return;
       const input = document.querySelector<HTMLInputElement>('#barcode');
-      if (input) input.value = result.getText();
+      if (input) {
+        input.value = result.getText();
+        validateBarcode({ currentTarget: input } as unknown as Event);
+      }
       status.textContent = `Read ${result.getText()}. Closing the camera.`;
       void checkBarcode();
       setTimeout(closeScanner, 350);
@@ -359,15 +378,46 @@ async function importJson(event: Event): Promise<void> {
   const status = document.querySelector('#records-status');
   if (!file || !status) return;
   try {
-    const parsed = JSON.parse(await file.text()) as { items?: IntakeItem[] } | IntakeItem[];
-    const items = Array.isArray(parsed) ? parsed : parsed.items;
-    if (!Array.isArray(items) || items.some((item) => !item.id || !item.barcode || !item.name)) throw new Error('bad shape');
-    for (const item of items) await saveItem(isDemo(), item);
+    const parsed: unknown = JSON.parse(await file.text());
+    const items = validateBackup(parsed);
+    await saveItemsAtomic(isDemo(), items);
     status.textContent = `${items.length} cards imported. Refreshing the list.`;
     setTimeout(() => void render(), 250);
   } catch {
     status.textContent = 'The backup could not be imported. Choose a Barcode Intake Card JSON backup.';
   }
+}
+
+function validTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && Number.isFinite(Date.parse(value));
+}
+
+function validPhoto(value: unknown): value is string | undefined {
+  return value === undefined || (typeof value === 'string' && (value === '' || /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(value)));
+}
+
+function validBackupItem(value: unknown): value is IntakeItem {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.id === 'string' && item.id.trim().length > 0
+    && typeof item.barcode === 'string' && PRINTABLE_CODE.test(item.barcode.trim())
+    && typeof item.name === 'string' && item.name.trim().length > 0
+    && typeof item.supplier === 'string'
+    && typeof item.location === 'string'
+    && typeof item.quantity === 'number' && Number.isSafeInteger(item.quantity) && item.quantity >= 0
+    && typeof item.notes === 'string'
+    && validPhoto(item.photo)
+    && validTimestamp(item.createdAt)
+    && validTimestamp(item.updatedAt);
+}
+
+function validateBackup(value: unknown): IntakeItem[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('bad backup');
+  const backup = value as Record<string, unknown>;
+  if (backup.version !== 1 || !validTimestamp(backup.exportedAt) || !Array.isArray(backup.items) || !backup.items.every(validBackupItem)) throw new Error('bad backup');
+  const ids = new Set(backup.items.map((item) => item.id));
+  if (ids.size !== backup.items.length) throw new Error('duplicate ids');
+  return backup.items;
 }
 
 function filterRecords(event: Event): void {
@@ -384,6 +434,10 @@ async function drawBarcode(): Promise<void> {
     JsBarcode(canvas, code, { format: 'CODE128', displayValue: false, background: '#ffffff', lineColor: '#000000', margin: 12, height: 72, width: 2 });
   } catch {
     canvas.setAttribute('aria-label', `Barcode image unavailable. Code ${code}`);
+    const status = document.querySelector<HTMLElement>('#barcode-render-status');
+    if (status) status.hidden = false;
+    const printButton = document.querySelector<HTMLButtonElement>('[data-action="print"]');
+    if (printButton) printButton.disabled = true;
   }
 }
 
@@ -407,7 +461,11 @@ document.addEventListener('click', (event) => {
   } else if (action === 'reset-demo') {
     void clearItems(true).then(seedDemo).then(() => render());
   } else if (action === 'start-real') {
-    event.preventDefault(); navigate('/intake');
+    event.preventDefault();
+    void clearItems(true).then(() => navigate('/intake')).catch(() => {
+      const status = document.querySelector<HTMLElement>('.demo-banner strong');
+      if (status) status.textContent = 'The demo could not be cleared. Reset it, then try again.';
+    });
   }
 });
 

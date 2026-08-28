@@ -1,6 +1,44 @@
-# Handoff — Barcode Intake Card v1.0.2
+# Handoff — Barcode Intake Card v1.0.3
 
-## Independent verification 3 — FAIL
+## Repair 3 result
+
+All three release blockers from verifier commit `c0e219476f2e67ac69633938824ad706294456a5` against candidate `db64420e3965dd8e8502729fa15783f3a9e80a09` are repaired. The researched brief, static PWA artifact class, local-only storage model, and previously passing behavior are unchanged.
+
+1. JSON restore now requires backup version 1, a valid export date, every complete field with its correct type, printable barcode text, valid dates and photo data, and unique IDs. All records are written in one IndexedDB transaction only after the whole file passes. Invalid shape, version, or type leaves existing cards unchanged. The ledger also sorts defensively, so records already damaged by the old importer no longer crash `/records`.
+2. The intake form now accepts only the printable Code 128 range and explains it before save. The exact verifier value `部品-１２３` is rejected with an announced recovery message. If an older stored record still cannot render, the print page shows a visible alert, disables **Print card**, and links directly to **Edit this card**.
+3. **Start for real** now clears the isolated demo database before opening real intake. Reopening `/demo` reseeds the original three samples, so edits cannot survive demo exit.
+
+The immutable app shell, service-worker cache, install URL, and visible build number advance from v3/v1.0.2 to v4/v1.0.3.
+
+## Exact regression coverage
+
+`tests/claims.spec.ts` now proves:
+
+- the verifier's partial backup, an unsupported version, and a wrong field type are rejected; a valid record placed before an invalid one is not partially written; the existing card survives reload;
+- a browser already containing the verifier's incomplete record still renders its ledger without a page error;
+- `部品-１２３` cannot be saved, while the supported sample still produces contrasting pixels and decodes as `5901234123457`;
+- a legacy unsupported code gets a visible, announced render error, disabled print action, and direct edit action;
+- an edited demo note returns to `Check bore before restocking.` after **Start for real** and demo re-entry;
+- activation deletes a seeded `barcode-intake-v3` cache and precaches the v4 shell.
+
+## Local release verification — 2026-08-28
+
+- Clean `npm ci`: passed with 29 packages. `npm audit` and `npm audit --omit=dev`: 0 vulnerabilities.
+- Every command in `.factory/claims.json`: passed independently, 15 of 15.
+- `npm test`: 32 of 32 Playwright tests passed. This includes the production build, claim, regression, offline, camera, keyboard, 390 px touch-target, route, console, and axe checks.
+- `npx tsc --noEmit`: passed. No separate lint script is configured.
+- `npm run build`: passed with `dist/index.html` at the root. Initial app JavaScript is 32.97 KB raw / 11.27 KB gzip and CSS is 11.85 KB raw / 3.57 KB gzip. Deferred barcode and scanner chunks are 14.72 KB and 108.68 KB gzip.
+- Factory `verify-url.sh`: passed in 561 ms with the expected title, `lang=en`, one `h1`, one `main`, zero missing image alternatives, zero unnamed buttons, and zero console errors. Evidence: [`qa-artifacts/repair-3-local-verify/verify.json`](qa-artifacts/repair-3-local-verify/verify.json).
+- Desktop and 390 × 844 visual checks show no horizontal overflow. Evidence: [`desktop`](qa-artifacts/repair-3-local-desktop.png), [`mobile`](qa-artifacts/repair-3-local-mobile.png), and [`Unicode rejection`](qa-artifacts/repair-3-local-unicode-rejected.png).
+- Lighthouse 13.4.1 mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 2.0 s, CLS 0, TBT 0 ms. Evidence: [`lighthouse-repair-3-local.json`](qa-artifacts/lighthouse-repair-3-local.json).
+- Privacy and response policy remain unchanged: tested flows make only same-origin GET requests; CSP permits only the app's required same-origin/data/blob resources; no analytics, account, sync, billing, or third-party runtime request exists.
+- Package/consumer and backend response/rate-limit tests are not applicable to this static PWA. The deployed route and security-header checks are recorded below after deployment.
+
+## Repair 3 deployment
+
+Pending the committed production deployment and live identity checks.
+
+## Independent verification 3 — input report
 
 **Release status: FAIL — do not release.** Candidate `db64420e3965dd8e8502729fa15783f3a9e80a09` was tested locally and at <https://barcode-intake-card.sociobot.in> on 2026-08-28. The live site matches all 20 served files in the candidate build byte-for-byte, but three acceptance defects remain:
 

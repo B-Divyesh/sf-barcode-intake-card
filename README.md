@@ -8,7 +8,7 @@ Live site: <https://barcode-intake-card.sociobot.in>
 
 ## Try the isolated demo
 
-Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/demo>. It loads three realistic workshop items in a separate IndexedDB database. Choose **Reset demo** to restore the samples. Choose **Start for real** to leave without copying them.
+Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/demo>. It loads three realistic workshop items in a separate IndexedDB database. Choose **Reset demo** to restore the samples. Choose **Start for real** to clear the demo and leave without copying it.
 
 ## What it does
 
@@ -16,7 +16,7 @@ Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/demo>. It loads 
 - Opens the device camera for barcode scanning with no account or checkout.
 - Matches a barcode against a CSV file chosen by the user.
 - Warns about saved cards with the same barcode.
-- Searches saved cards and prints one-up cards with Code 128 barcodes.
+- Searches saved cards and prints one-up cards with Code 128 barcodes. Printable codes use English letters, numbers, spaces, and punctuation.
 - Exports all cards as CSV or a complete JSON backup.
 - Imports its JSON backup and works offline after the first visit.
 

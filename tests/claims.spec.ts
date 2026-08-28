@@ -6,7 +6,7 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v3.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v4.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -17,9 +17,17 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
 test('PWA repair cache activates with the versioned app shell', async ({ page }) => {
   await page.goto('/demo');
   await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.evaluate(async () => {
+    await caches.open('barcode-intake-v3');
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  });
+  await page.reload();
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v3'))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v3.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v4'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v3'))).toBe(false);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v4.js')))).toBe(true);
 });
 
 test('@claim:local-only keeps item data in this browser without an account or sync', async ({ page }) => {
@@ -116,9 +124,73 @@ test('@claim:json-backup restores exported cards', async ({ page }) => {
   await expect(page.getByText('Backup test washer')).toBeVisible();
 });
 
+test('@regression:backup-validation rejects bad shape, version, and types without changing stored cards', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.goto('/intake');
+  await page.getByLabel('Barcode or SKU').fill('KEEP-1');
+  await page.getByLabel('Item name').fill('Existing keeper card');
+  await page.getByLabel('Location note').fill('Shelf K');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+  await page.goto('/records');
+
+  const now = new Date().toISOString();
+  const complete = {
+    id: 'must-not-import', barcode: 'VALID-2', name: 'Must not import', supplier: '',
+    location: 'Shelf V', quantity: 2, notes: '', createdAt: now, updatedAt: now
+  };
+  const invalidBackups = [
+    { version: 1, exportedAt: now, items: [complete, { id: 'bad-a', barcode: 'BAD-A', name: 'Missing fields A' }] },
+    { version: 2, exportedAt: now, items: [complete] },
+    { version: 1, exportedAt: now, items: [{ ...complete, quantity: '2' }] }
+  ];
+  for (const [index, backup] of invalidBackups.entries()) {
+    await page.getByLabel('Import backup').setInputFiles({
+      name: `invalid-${index}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup))
+    });
+    await expect(page.locator('#records-status')).toHaveText('The backup could not be imported. Choose a Barcode Intake Card JSON backup.');
+    await expect(page.getByText('Existing keeper card')).toBeVisible();
+    await expect(page.getByText('Must not import')).toHaveCount(0);
+  }
+
+  await page.reload();
+  await expect(page.getByText('Existing keeper card')).toBeVisible();
+  await expect(page.getByText('Must not import')).toHaveCount(0);
+  await expect(page.getByText('1 card stored in this browser.')).toBeVisible();
+
+  // The repair must also recover browsers already damaged by the previous importer.
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('barcode-intake-real', 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('items', 'readwrite');
+      tx.objectStore('items').put({ id: 'bad-a', barcode: 'BAD-A', name: 'Missing fields A' });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  await page.reload();
+  await expect(page.getByText('Missing fields A')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Find your saved cards' })).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
+
 test('@claim:print-card renders a decodable barcode under the production policy', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.goto('/intake');
+  await page.getByLabel('Barcode or SKU').fill('部品-１２３');
+  await page.getByLabel('Item name').fill('Unsupported code test');
+  await page.getByLabel('Location note').fill('Print bench');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.locator('#form-status')).toHaveText('Use English letters, numbers, spaces, or standard punctuation. This barcode format cannot print other scripts.');
+  await expect(page).toHaveURL(/\/intake$/);
+
   const response = await page.goto('/print/demo-bearing?demo=1');
   expect(response?.headers()['content-security-policy']).toContain("style-src 'self'");
   const barcode = page.locator('#print-barcode');
@@ -145,6 +217,33 @@ test('@claim:print-card renders a decodable barcode under the production policy'
   expect(decoded.getText()).toBe('5901234123457');
   await expect(page.getByText('Bin A-14')).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('@regression:barcode-render-error gives legacy unsupported codes a visible recovery path', async ({ page }) => {
+  await page.goto('/records');
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('barcode-intake-real', 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('items', 'readwrite');
+      tx.objectStore('items').put({
+        id: 'legacy-unicode', barcode: '部品-１２３', name: 'Legacy imported part', supplier: '',
+        location: 'Old shelf', quantity: 1, notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  await page.goto('/print/legacy-unicode');
+  await expect(page.getByRole('alert')).toContainText('This code cannot be printed as a Code 128 barcode. Use English letters, numbers, spaces, or standard punctuation.');
+  await expect(page.getByRole('button', { name: 'Print card' })).toBeDisabled();
+  await expect(page.locator('#print-barcode')).toHaveAttribute('aria-label', 'Barcode image unavailable. Code 部品-１２３');
+  await expect(page.getByRole('link', { name: 'Edit this card' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Back to cards' })).toBeVisible();
 });
 
 test('@claim:photo-reduction reduces a large photo before storing it', async ({ page }) => {
@@ -230,6 +329,21 @@ test('@claim:demo-edit searches, edits, and prints a sample card', async ({ page
   await page.getByRole('link', { name: 'Back to cards' }).click();
   await page.getByRole('link', { name: 'Print card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+});
+
+test('@regression:demo-exit discards edits before the demo is reopened', async ({ page }) => {
+  const editedNote = 'Verifier edit that should be discarded when demo ends';
+  await page.goto('/demo');
+  await page.getByRole('link', { name: 'Edit card' }).first().click();
+  await page.getByLabel('Review notes').fill(editedNote);
+  await page.getByRole('button', { name: 'Save card changes' }).click();
+  await expect(page.getByText(editedNote)).toBeVisible();
+  await page.getByRole('link', { name: 'Start for real' }).click();
+  await expect(page).toHaveURL(/\/intake$/);
+  await page.goto('/demo');
+  await page.getByRole('link', { name: 'Edit card' }).first().click();
+  await expect(page.getByLabel('Review notes')).toHaveValue('Check bore before restocking.');
+  await expect(page.getByLabel('Review notes')).not.toHaveValue(editedNote);
 });
 
 test('@claim:camera-ready opens the included device camera only after a scan action', async ({ page, context }) => {

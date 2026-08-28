@@ -33,7 +33,9 @@ async function withStore<T>(demo: boolean, mode: IDBTransactionMode, run: (store
 
 export async function getItems(demo: boolean): Promise<IntakeItem[]> {
   const items = await withStore<IntakeItem[]>(demo, 'readonly', (store) => store.getAll());
-  return items.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  // Older builds could import incomplete records. Keep the ledger reachable so
+  // those records can be edited or deleted instead of crashing the whole app.
+  return items.sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')));
 }
 
 export async function getItem(demo: boolean, id: string): Promise<IntakeItem | undefined> {
@@ -42,6 +44,29 @@ export async function getItem(demo: boolean, id: string): Promise<IntakeItem | u
 
 export async function saveItem(demo: boolean, item: IntakeItem): Promise<IDBValidKey> {
   return withStore<IDBValidKey>(demo, 'readwrite', (store) => store.put(item));
+}
+
+export async function saveItemsAtomic(demo: boolean, items: IntakeItem[]): Promise<void> {
+  const db = await openDb(demo);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    for (const item of items) store.put(item);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      const error = tx.error ?? new Error('The backup transaction failed.');
+      db.close();
+      reject(error);
+    };
+    tx.onabort = () => {
+      const error = tx.error ?? new Error('The backup transaction was cancelled.');
+      db.close();
+      reject(error);
+    };
+  });
 }
 
 export async function removeItem(demo: boolean, id: string): Promise<undefined> {
