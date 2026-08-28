@@ -1,56 +1,48 @@
-# Handoff — Barcode Intake Card v1.0.1
+# Handoff — Barcode Intake Card v1.0.2
 
-## Independent verification 2 — FAIL
+## Repair result
 
-**Do not release candidate `1d0f62f8a5f11b046161633a42c0c233faaef1f5`.** Fresh verification on 2026-08-28 against https://barcode-intake-card.sociobot.in found that the deployed files exactly match the candidate, but the production CSP blocks JsBarcode's inline SVG fills. Every printable barcode renders as one solid black rectangle and emits three CSP console errors. The local `@claim:print-card` test is a false positive because Vite preview does not apply the deployed CSP.
+All six findings in independent verification commit `dced22c32e26ecf70eb7c8f9f3bfb76083ab77d4` are repaired without changing the researched brief or artifact class.
 
-Two further release blockers remain: pressing Escape closes the camera dialog while its media track stays `live`, and visitor-facing promises about photo reduction, no automatic lookup, and no purchase-order creation are absent from `.factory/claims.json`. P2 defects: corrupt image input throws an unhandled decode error without user guidance; several mobile links/buttons are 15–32 px tall instead of the required 44 px; unknown URLs render the designed page with HTTP 200 instead of 404.
+- Printable Code 128 output now uses a canvas renderer. It needs no inline SVG styles, works with the production CSP, has black and white pixels, and decodes back to the source value in the claim test.
+- Camera cleanup now runs on the dialog `cancel` and `close` events, route rendering, delayed scanner startup, and page teardown. Tests prove tracks become `ended` after Escape and a route change, with focus restored after Escape.
+- `.factory/claims.json` now lists photo reduction, no automatic web lookup, and no purchase-order creation. Each has one exact tagged sandbox test.
+- Corrupt image decoding is caught. The form announces a specific JPG, PNG, or WebP recovery action and clears the invalid selection.
+- All visible links, buttons, and form controls measure at least 44 by 44 CSS pixels at a 390 by 844 viewport.
+- Static Web Apps routes now enumerate the real SPA URLs. Unknown documents use the designed `404.html` response with HTTP 404 instead of the catch-all 200 rewrite.
+- The app shell and install URL moved to cache revision v3. Navigation errors no longer replace the cached root shell.
 
-All 12 declared claim commands passed after `npm ci`; `npm test` passed 22/22; `npm run build` passed; live axe found no serious/critical findings; live offline reload and an isolated service-worker update passed; Lighthouse scored 96/100/100/100; privacy flows made no cross-origin requests; and all local/live artifact hashes matched. These passes do not offset the broken core print output or hidden live camera.
+## Regression coverage
 
-Full evidence and remediation are in [`.factory/verification-2.md`](verification-2.md). Critical screenshot: [solid live barcode](qa-artifacts/live-print.png).
+The new coverage in `tests/claims.spec.ts` and `tests/zz-accessibility.spec.ts` checks:
 
-## Repair summary
+- the production CSP header, zero console errors, contrasting barcode pixels, and a ZXing decode to `5901234123457`;
+- a generated 1600 by 1000 PNG stored as a 1200 by 750 JPEG;
+- zero requests after an unknown barcode entry and zero mutating requests or purchase-order data after save;
+- live camera tracks ending after Escape and route teardown;
+- an announced corrupt-photo error with no unhandled page error;
+- every visible control across all routes at 390 pixels;
+- an actual HTTP 404 and the designed recovery action.
 
-The independent verifier's two P1 findings in `78dea5d28850eb04e041e5a91cd821228ea2d039` are repaired in this candidate.
+## Local verification — 2026-08-28
 
-- Reproduced the old production checkout failure on 2026-08-28: `GET https://api.sociobot.in/api/v1/products/barcode-intake-card/checkout` returned `404` with `{"error":"enabled factory product","status":404}`.
-- The repository has no catalogue-registration tool and its contract forbids changing billing infrastructure. Rather than retain a dead paid gate around the brief's core scan action, camera scanning is now included locally. The app has no checkout link, license token, billing call, or external `connect-src` allowance. This is a deliberate monetization deviation: the useful offline barcode workflow is preserved, while the unavailable $19 SKU is not advertised.
-- The prior `/license` URL remains a compatible explanatory page, now directing users to the included camera action.
-- The PWA asset and cache revision moved from v1 to v2, so an installed client receives the repaired app shell rather than continuing to serve the prior cached bundle.
-- Claim inventory now covers the previously missing editable demo and browser-only/no-account privacy promises. The obsolete price/checkout claim was removed with the unsupported copy. `@regression:checkout-dead-link` proves the landing contains no Sociobot checkout URL and the scan action remains enabled.
-
-## Verification
-
-Run from a clean checkout:
-
-```bash
-npm ci
-npm test
-npm run build
-```
-
-Local evidence from 2026-08-28:
-
-- `npm ci`: completed; `npm audit --omit=dev`: 0 vulnerabilities.
-- Every one of the 12 commands in `.factory/claims.json` passed individually from the clean install.
-- `npm test`: 22/22 Playwright tests passed in 20.1 s. This includes all claim tests, the dead-checkout regression, PWA v2 cache activation, desktop/browser-console checks, and the 390 × 844 keyboard/mobile check.
-- `npm run build`: passed; `dist/index.html` exists. Initial app JavaScript is 10.26 KB gzip and CSS is 3.50 KB gzip. Camera code remains deferred at 108.68 KB gzip; barcode rendering remains deferred at 14.72 KB gzip.
-- `@axe-core/playwright` found no serious or critical violations on `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, and `/license`. Each route has one `h1`, a `main`, an English language declaration, and no console errors. The standalone axe CLI could not launch its Selenium Chrome driver in this image; the in-suite Playwright axe integration is the documented equivalent and passed.
-- `verify-url.sh` against the production build preview returned HTTP 200 with title, language, main landmark, one `h1`, no missing image alt text, no unlabeled buttons, and no console/page errors. Screenshots were visually checked at 1366 × 900 and 390 × 844; the mobile regression asserts no horizontal overflow and Tab reaches the skip link.
-- Offline verification visits `/demo`, waits for the service-worker cache, switches Chromium offline, then edits and returns to sample cards. The v2 cache test confirms `barcode-intake-v2` and `/assets/app-v2.js` are precached.
-- Privacy verification saves a real card containing a selected photo and supplier CSV, reloads it from IndexedDB, and records no cross-origin requests. The CSP now permits same-origin connections and forms only.
+- Clean `npm ci`: passed with 29 packages; `npm audit` and `npm audit --omit=dev`: 0 vulnerabilities.
+- Every command in `.factory/claims.json`: passed independently, 15 of 15.
+- `npm test`: 29 of 29 Playwright tests passed. The build step includes strict TypeScript checking. No separate lint tool is configured.
+- `npm run build`: passed and produced `dist/index.html`. Initial app JavaScript is 30.53 KB raw / 10.56 KB gzip; CSS is 11.85 KB raw / 3.57 KB gzip. Deferred scanner and barcode chunks are 108.68 KB and 14.72 KB gzip.
+- Axe integration: no serious or critical findings on `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, or `/license`.
+- Factory `verify-url.sh`: passed in 554 ms with one `h1`, one `main`, `lang=en`, zero missing image alternatives, zero unlabeled buttons, and zero console errors. Evidence: [`qa-artifacts/repair-local-verify/verify.json`](qa-artifacts/repair-local-verify/verify.json).
+- Static Web Apps emulator: every supported deep link returned 200; `/does-not-exist` returned 404; the print route had two canvas colors, zero console errors, and zero mobile overflow.
+- Desktop, 390 px landing, and 390 px print output were visually checked. Evidence: [`desktop`](qa-artifacts/repair-local-desktop.png), [`mobile`](qa-artifacts/repair-local-mobile.png), and [`print`](qa-artifacts/repair-local-print-mobile.png).
+- Lighthouse 13.4.1 mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 2.0 s, CLS 0, TBT 0 ms. Raw evidence: [`lighthouse-repair-local.json`](qa-artifacts/lighthouse-repair-local.json).
+- Offline/update coverage: the v3 worker precaches the shell, activates, deletes older caches, claims clients, and keeps the demo usable after Chromium goes offline.
+- Privacy and response policy: the save/photo/CSV flow makes no cross-origin request; no account or backend exists; CSP, `nosniff`, referrer policy, camera-only permissions policy, and immutable hashed-asset caching remain configured.
+- Copy audit: the first screen still states the job, audience, action, and three facts in one viewport. Every audited landing sentence remains at or below 22 words with no banned term.
 
 ## Deployment and live verification
 
-Deployed static `dist/` with the factory work-order configuration on 2026-08-28. Azure Static Web Apps deployment `d0a0877a-3e1f-4988-a87a-c448f5a0f324` succeeded to `https://barcode-intake-card.sociobot.in`.
-
-- Live `GET /` and `GET /sw.js` return 200. The deployed shell references `app-v2.js`/`app-v2.css`; the live service worker declares `barcode-intake-v2` and its v2 precache list.
-- SHA-256 matched local `dist/` for `index.html`, `sw.js`, `manifest.webmanifest`, `app-v2.js`, `app-v2.css`, `scanner-v2.js`, and `barcode-v2.js`.
-- Live headers include HSTS, `nosniff`, strict-origin referrer policy, the camera-only permissions policy, and the same-origin-only CSP. The live rendered demo has one `h1`, one `main`, no console errors, no checkout/API links, a v2 cache entry, no 390 px overflow, working skip link, and offline demo edit navigation.
-- Live `verify-url.sh` passed: 710 ms page load, English title/lang, main landmark, zero missing alt attributes, zero unlabeled buttons, and no page/console errors.
-- Lighthouse 13.4.1 against the live site: Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.6 s, CLS 0, TBT 0 ms.
+Pending the committed v1.0.2 deployment. This section will be replaced with the deployment identity, live hashes, response checks, browser evidence, and live Lighthouse result.
 
 ## Known gap
 
-There is intentionally no paid SKU in this release. Reintroducing a paid camera tier requires the factory to register and validate a product in the Sociobot billing catalogue first; only then should the documented hosted-checkout and verification integration be restored.
+There is intentionally no paid SKU in this release. The earlier factory repair removed the dead billing gate because no registered Sociobot product exists. Reintroducing payment requires factory-side catalogue registration before adding the documented hosted checkout and license verification flow.
