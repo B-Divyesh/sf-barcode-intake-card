@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.7';
+const BUILD = 'v1.0.8';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;

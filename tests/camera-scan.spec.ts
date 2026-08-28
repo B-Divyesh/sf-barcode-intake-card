@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.use({ serviceWorkers: 'block' });
 
 test('@claim:camera-scan camera scanning fills the barcode field', async ({ page }) => {
-  await page.route('**/assets/scanner-v9.js', async (route) => {
+  await page.route('**/assets/scanner-v10.js', async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
       body: `export class BrowserMultiFormatReader {

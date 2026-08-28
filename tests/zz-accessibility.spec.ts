@@ -30,7 +30,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v9.js', async (route) => {
+  await page.route('**/assets/app-v10.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();

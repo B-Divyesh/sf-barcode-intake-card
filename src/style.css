@@ -155,6 +155,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--red); box-shadow
   .step:last-child { border-bottom: 0; }
   .limits { columns: 1; }
   .app-header { display: grid; }
+  .toolbar .field { flex-basis: 100%; }
   .field-grid { grid-template-columns: 1fr; }
   .field.full { grid-column: auto; }
   .record { grid-template-columns: 1fr; gap: 10px; }
