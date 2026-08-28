@@ -1,5 +1,15 @@
 # Handoff — Barcode Intake Card v1.0.1
 
+## Independent verification 2 — FAIL
+
+**Do not release candidate `1d0f62f8a5f11b046161633a42c0c233faaef1f5`.** Fresh verification on 2026-08-28 against https://barcode-intake-card.sociobot.in found that the deployed files exactly match the candidate, but the production CSP blocks JsBarcode's inline SVG fills. Every printable barcode renders as one solid black rectangle and emits three CSP console errors. The local `@claim:print-card` test is a false positive because Vite preview does not apply the deployed CSP.
+
+Two further release blockers remain: pressing Escape closes the camera dialog while its media track stays `live`, and visitor-facing promises about photo reduction, no automatic lookup, and no purchase-order creation are absent from `.factory/claims.json`. P2 defects: corrupt image input throws an unhandled decode error without user guidance; several mobile links/buttons are 15–32 px tall instead of the required 44 px; unknown URLs render the designed page with HTTP 200 instead of 404.
+
+All 12 declared claim commands passed after `npm ci`; `npm test` passed 22/22; `npm run build` passed; live axe found no serious/critical findings; live offline reload and an isolated service-worker update passed; Lighthouse scored 96/100/100/100; privacy flows made no cross-origin requests; and all local/live artifact hashes matched. These passes do not offset the broken core print output or hidden live camera.
+
+Full evidence and remediation are in [`.factory/verification-2.md`](verification-2.md). Critical screenshot: [solid live barcode](qa-artifacts/live-print.png).
+
 ## Repair summary
 
 The independent verifier's two P1 findings in `78dea5d28850eb04e041e5a91cd821228ea2d039` are repaired in this candidate.
