@@ -1,0 +1,10 @@
+[
+  {"id":"offline-reload","claim":"Works offline after the first visit","where":"landing facts and README","test":"npm test -- --grep @claim:offline-reload","sandbox":"fresh browser context; visit /demo, wait for the cached shell, go offline, navigate to edit and back"},
+  {"id":"local-only","claim":"Demo item data stays in this browser","where":"landing facts, privacy page, and README","test":"npm test -- --grep @claim:local-only","sandbox":"fresh /demo context; intercept a full edit and save flow; assert every request is same-origin"},
+  {"id":"manual-intake","claim":"Manual intake is free","where":"landing facts and license copy","test":"npm test -- --grep @claim:manual-intake","sandbox":"fresh context with no license; save a manual item and find it in /records"},
+  {"id":"csv-lookup","claim":"A chosen supplier CSV can fill matching item fields","where":"intake page and README","test":"npm test -- --grep @claim:csv-lookup","sandbox":"fresh context; upload an in-memory supplier CSV and match one barcode"},
+  {"id":"csv-export","claim":"Exports every saved card as CSV","where":"records toolbar and README","test":"npm test -- --grep @claim:csv-export","sandbox":"fresh /demo context; download CSV; assert header and one row per sample card"},
+  {"id":"print-card","claim":"Creates a printable one-up card with a barcode","where":"print action and README","test":"npm test -- --grep @claim:print-card","sandbox":"fresh /demo context; open the first print card; assert barcode marks and location"},
+  {"id":"demo-isolated","claim":"Demo data never touches real cards","where":"demo banner and README","test":"npm test -- --grep @claim:demo-isolated","sandbox":"fresh context; seed /demo then open /records and assert the sample cards are absent"},
+  {"id":"camera-ready","claim":"The licensed scan action opens the device camera","where":"intake and license pages","test":"npm test -- --grep @claim:camera-ready","sandbox":"fresh /demo context with a fake permitted camera; assert the camera is absent before the action and ready after it"}
+]
