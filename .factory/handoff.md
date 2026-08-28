@@ -31,9 +31,15 @@ Local evidence from 2026-08-28:
 - Offline verification visits `/demo`, waits for the service-worker cache, switches Chromium offline, then edits and returns to sample cards. The v2 cache test confirms `barcode-intake-v2` and `/assets/app-v2.js` are precached.
 - Privacy verification saves a real card containing a selected photo and supplier CSV, reloads it from IndexedDB, and records no cross-origin requests. The CSP now permits same-origin connections and forms only.
 
-## Deployment
+## Deployment and live verification
 
-Build output remains the required static `dist/` directory. Deploy with the factory static deployment work order after this commit. Post-deploy live URL, headers, service-worker identity, checkout absence, and Lighthouse evidence are recorded below once deployment completes.
+Deployed static `dist/` with the factory work-order configuration on 2026-08-28. Azure Static Web Apps deployment `d0a0877a-3e1f-4988-a87a-c448f5a0f324` succeeded to `https://barcode-intake-card.sociobot.in`.
+
+- Live `GET /` and `GET /sw.js` return 200. The deployed shell references `app-v2.js`/`app-v2.css`; the live service worker declares `barcode-intake-v2` and its v2 precache list.
+- SHA-256 matched local `dist/` for `index.html`, `sw.js`, `manifest.webmanifest`, `app-v2.js`, `app-v2.css`, `scanner-v2.js`, and `barcode-v2.js`.
+- Live headers include HSTS, `nosniff`, strict-origin referrer policy, the camera-only permissions policy, and the same-origin-only CSP. The live rendered demo has one `h1`, one `main`, no console errors, no checkout/API links, a v2 cache entry, no 390 px overflow, working skip link, and offline demo edit navigation.
+- Live `verify-url.sh` passed: 710 ms page load, English title/lang, main landmark, zero missing alt attributes, zero unlabeled buttons, and no page/console errors.
+- Lighthouse 13.4.1 against the live site: Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.6 s, CLS 0, TBT 0 ms.
 
 ## Known gap
 
