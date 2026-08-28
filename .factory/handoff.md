@@ -41,7 +41,16 @@ The new coverage in `tests/claims.spec.ts` and `tests/zz-accessibility.spec.ts` 
 
 ## Deployment and live verification
 
-Pending the committed v1.0.2 deployment. This section will be replaced with the deployment identity, live hashes, response checks, browser evidence, and live Lighthouse result.
+The committed candidate `3d965b955a686e67cdf0b00df75371c1fd6b657d` was pushed to `origin/main` and deployed with `/opt/fleet/lib/deploy-static.sh barcode-intake-card dist` on 2026-08-28. Azure Static Web Apps deployment `ea922fff-9de6-4b6d-9607-4c6064e02ad5` succeeded at <https://barcode-intake-card.sociobot.in>.
+
+- SHA-256 matched local `dist/` for all 20 served files. The live shell references `app-v3.js` and `app-v3.css`; the worker reports `barcode-intake-v3`.
+- Supported routes `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, `/license`, and `/print/demo-bearing?demo=1` return 200. `/does-not-exist` returns 404 with the designed recovery page.
+- Live factory `verify-url.sh`: passed in 669 ms with the expected title, `lang=en`, one `h1`, one `main`, zero missing alternatives, zero unlabeled buttons, and zero console errors. Evidence: [`qa-artifacts/repair-live-verify/verify.json`](qa-artifacts/repair-live-verify/verify.json).
+- Live print verification under the deployed CSP found two canvas colors, decoded the barcode as `5901234123457`, and produced zero console errors. The 390 px print was visually checked: [`repair-live-print-mobile.png`](qa-artifacts/repair-live-print-mobile.png).
+- Live fake-camera verification proved Escape closes the dialog and changes its media track to `ended`. Every visible control across every route measured at least 44 by 44 CSS pixels at 390 px.
+- A live CSV-match, JPEG-photo, save, and print flow made zero cross-origin requests and produced zero console/page errors. A fresh v3 service-worker context completed a full offline `/demo` reload with sample data present.
+- Live response headers include HSTS, `nosniff`, strict-origin referrer policy, camera-only permissions policy, same-origin CSP, and immutable one-year caching for versioned assets. Captured headers: [`repair-live-headers.txt`](qa-artifacts/repair-live-headers.txt).
+- Live Lighthouse 13.4.1 mobile: Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 1.7 s, CLS 0, TBT 0 ms. Raw evidence: [`lighthouse-repair-live.json`](qa-artifacts/lighthouse-repair-live.json).
 
 ## Known gap
 
