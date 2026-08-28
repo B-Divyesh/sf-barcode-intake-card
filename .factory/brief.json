@@ -1,0 +1,11 @@
+{
+  "slug": "barcode-intake-card",
+  "title": "Barcode Intake Card",
+  "territory": "utilities",
+  "user": "A micro-seller or workshop receiving miscellaneous stock who needs to turn a barcode scan into a reviewable item card without sending supplier or inventory data to a third party.",
+  "smallest_useful_product": "Offline PWA scanner with manual/CSV lookup, photo and supplier fields, duplicate-candidate review, and printable one-up label/card export.",
+  "success_measure": "A pilot can record 30 miscellaneous items in under an hour with at least 90% having a searchable barcode and location note.",
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time",
+  "catalog_description": "Turn a barcode scan into a private, printable item card."
+}

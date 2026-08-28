@@ -1,0 +1,9 @@
+{
+  "tool": "/opt/fleet/lib/gen-image.sh",
+  "model": "factory-image",
+  "date": "2026-08-28",
+  "size": "1536x1024",
+  "quality": "high",
+  "use_case": "stylized-concept",
+  "prompt": "Overhead workshop receiving desk with a plain cardboard carton, several small metal fittings, a coiled cable, a handheld barcode scanner, a blank adhesive label, and a ruled paper intake card. Practical micro-seller packing bench. High-detail monochrome linocut and newspaper wood engraving, visible halftone dots and ink texture. Landscape composition, objects gathered on the left and centre with calm paper space on the right. Hard window light. Black ink, warm ivory newsprint, one tiny muted dark-red registration mark. No readable text, logos, brands, hands, people, gradients, glossy rendering, fake interface, watermark, or distorted barcodes."
+}
