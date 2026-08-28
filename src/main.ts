@@ -193,6 +193,7 @@ function notFound(): string {
 
 async function render(moveFocus = false): Promise<void> {
   await handleLicenseReturn();
+  if (isDemo()) await seedDemo();
   const savedLicense = localStorage.getItem(`sb_license:${PRODUCT}`);
   if (savedLicense && !isDemo()) void verifyLicense(savedLicense);
   const path = routeUrl().pathname.replace(/\/$/, '') || '/';

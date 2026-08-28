@@ -24,14 +24,14 @@ npm run build
 
 Latest local results on 2026-08-28:
 
-- `npm test`: 16 passed in 14.5 seconds.
+- `npm test`: 20 passed in 18.0 seconds.
 - Claim coverage: offline use, local-only demo flow, free manual intake, CSV matching, CSV export, print barcode, demo isolation, and camera startup.
 - Axe: no serious or critical violations on `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, or `/license`.
 - Mobile: 390 × 844 px has no horizontal overflow; keyboard skip-link path passes.
 - Console: no errors on the seven tested routes.
 - `npm audit`: 0 vulnerabilities.
 - `npm run build`: passes; `dist/index.html` exists.
-- Build size: initial JS 11.05 KB gzip; CSS 3.50 KB gzip; scanner 108.68 KB gzip on demand; barcode renderer 14.72 KB gzip on demand; mobile hero 47 KB.
+- Build size: initial JS 11.06 KB gzip; CSS 3.51 KB gzip; scanner 108.68 KB gzip on demand; barcode renderer 14.72 KB gzip on demand; mobile hero 47 KB.
 - Lighthouse 12.8.2, mobile defaults against the production preview: Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 2.0 s, TBT 0 ms, CLS 0.
 
 The offline claim waits for the cached shell, switches Chromium offline, then edits and returns to demo records without a network connection.

@@ -31,10 +31,25 @@ test('@claim:manual-intake saves a free manual item card', async ({ page }) => {
   await page.getByLabel('Barcode or SKU').fill('TEST-4042');
   await page.getByLabel('Item name').fill('Brass hose adapter');
   await page.getByLabel('Location note').fill('Bin B-08');
+  await page.getByLabel('Supplier').fill('Harbour Fasteners');
+  await page.getByLabel('Quantity').fill('9');
+  await page.getByLabel('Review notes').fill('Check thread before use.');
+  await page.getByLabel('Item photo').setInputFiles({ name: 'adapter.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64') });
   await page.getByRole('button', { name: 'Save item card' }).click();
   await expect(page.getByText('Brass hose adapter')).toBeVisible();
   await page.goto('/records');
   await expect(page.getByText('TEST-4042')).toBeVisible();
+  await page.getByRole('link', { name: 'Edit card' }).click();
+  await expect(page.getByLabel('Supplier')).toHaveValue('Harbour Fasteners');
+  await expect(page.locator('#photo-preview')).toHaveAttribute('src', /^data:image\/jpeg/);
+});
+
+test('@claim:duplicate-review shows saved cards with the same barcode', async ({ page }) => {
+  await page.goto('/intake?demo=1');
+  await page.getByLabel('Barcode or SKU').fill('5901234123457');
+  await page.getByLabel('Barcode or SKU').press('Tab');
+  await expect(page.getByText('1 possible duplicate')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Review this card' })).toBeVisible();
 });
 
 test('@claim:csv-lookup fills fields from a chosen supplier CSV', async ({ page }) => {
@@ -58,6 +73,33 @@ test('@claim:csv-export exports one row per demo card', async ({ page }) => {
   const lines = text.trim().split('\n');
   expect(lines[0]).toBe('barcode,name,supplier,location,quantity,notes,updated_at');
   expect(lines).toHaveLength(4);
+});
+
+test('@claim:search-cards filters saved cards by location', async ({ page }) => {
+  await page.goto('/demo');
+  await page.getByLabel('Search cards').fill('Drawer C-03');
+  await expect(page.getByText('USB-C panel cable, 30 cm')).toBeVisible();
+  await expect(page.getByText('608ZZ shielded bearing')).toBeHidden();
+});
+
+test('@claim:json-backup restores exported cards', async ({ page }) => {
+  await page.goto('/intake');
+  await page.getByLabel('Barcode or SKU').fill('BACKUP-1');
+  await page.getByLabel('Item name').fill('Backup test washer');
+  await page.getByLabel('Location note').fill('Tray 4');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await page.goto('/records');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup' }).click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(chunk as Buffer);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('heading', { name: 'No item cards yet' })).toBeVisible();
+  await page.getByLabel('Import backup').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.concat(chunks) });
+  await expect(page.getByText('Backup test washer')).toBeVisible();
 });
 
 test('@claim:print-card renders a scannable barcode on a one-up card', async ({ page }) => {
@@ -84,4 +126,12 @@ test('@claim:camera-ready opens the device camera only after a scan action', asy
   await page.getByRole('button', { name: 'Scan with camera' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByText(/Camera ready|Hold one barcode/)).toBeVisible();
+});
+
+test('@claim:license-restore verifies a pasted Sociobot license', async ({ page }) => {
+  await page.route('https://api.sociobot.in/api/v1/products/barcode-intake-card/verify?license=test-license', (route) => route.fulfill({ json: { valid: true, reason: 'ok', expires_at: null } }));
+  await page.goto('/license');
+  await page.getByLabel('Have a license? Paste it here').fill('test-license');
+  await page.getByRole('button', { name: 'Verify license' }).click();
+  await expect(page.getByText('Active on this device.')).toBeVisible();
 });
