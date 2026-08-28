@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { BarcodeFormat, BinaryBitmap, DecodeHintType, HybridBinarizer, MultiFormatReader, RGBLuminanceSource } from '@zxing/library';
 
 test('@claim:offline-reload works offline after the first visit', async ({ page, context }) => {
   await page.goto('http://127.0.0.1:4173/demo');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v2.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v3.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -17,8 +18,8 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
   await page.goto('/demo');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v2'))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v2.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v3'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v3.js')))).toBe(true);
 });
 
 test('@claim:local-only keeps item data in this browser without an account or sync', async ({ page }) => {
@@ -115,13 +116,98 @@ test('@claim:json-backup restores exported cards', async ({ page }) => {
   await expect(page.getByText('Backup test washer')).toBeVisible();
 });
 
-test('@claim:print-card renders a scannable barcode on a one-up card', async ({ page }) => {
-  await page.goto('/demo');
-  await page.getByRole('link', { name: 'Print card' }).first().click();
+test('@claim:print-card renders a decodable barcode under the production policy', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  const response = await page.goto('/print/demo-bearing?demo=1');
+  expect(response?.headers()['content-security-policy']).toContain("style-src 'self'");
   const barcode = page.locator('#print-barcode');
   await expect(barcode).toHaveAttribute('aria-label', /Barcode/);
-  await expect(barcode.locator('rect')).not.toHaveCount(0);
+  await expect.poll(() => barcode.evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(250);
+  const pixels = await barcode.evaluate((canvas: HTMLCanvasElement) => {
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Barcode canvas has no drawing context.');
+    const rgba = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const luminances = new Array<number>(canvas.width * canvas.height);
+    const colors = new Set<number>();
+    for (let pixel = 0; pixel < luminances.length; pixel += 1) {
+      luminances[pixel] = rgba[pixel * 4];
+      colors.add(rgba[pixel * 4]);
+    }
+    return { width: canvas.width, height: canvas.height, luminances, colorCount: colors.size };
+  });
+  expect(pixels.colorCount).toBeGreaterThan(1);
+  const hints = new Map();
+  hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.CODE_128]);
+  hints.set(DecodeHintType.TRY_HARDER, true);
+  const source = new RGBLuminanceSource(Uint8ClampedArray.from(pixels.luminances), pixels.width, pixels.height);
+  const decoded = new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(source)), hints);
+  expect(decoded.getText()).toBe('5901234123457');
   await expect(page.getByText('Bin A-14')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('@claim:photo-reduction reduces a large photo before storing it', async ({ page }) => {
+  await page.goto('/intake');
+  const source = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1600;
+    canvas.height = 1000;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = '#d9cbb4';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#171714';
+    for (let x = 0; x < canvas.width; x += 80) context.fillRect(x, 0, 24, canvas.height);
+    return canvas.toDataURL('image/png');
+  });
+  await page.getByLabel('Item photo').setInputFiles({ name: 'large.png', mimeType: 'image/png', buffer: Buffer.from(source.split(',')[1], 'base64') });
+  await expect(page.locator('#form-status')).toContainText('Photo ready at 1200 × 750 pixels.');
+  await page.getByLabel('Barcode or SKU').fill('PHOTO-1200');
+  await page.getByLabel('Item name').fill('Reduced photo test');
+  await page.getByLabel('Location note').fill('Photo bench');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+  await page.goto('/records');
+  await page.getByRole('link', { name: 'Edit card' }).click();
+  const dimensions = await page.locator('#photo-preview').evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    return { width: image.naturalWidth, height: image.naturalHeight, source: image.src };
+  });
+  expect(dimensions).toEqual(expect.objectContaining({ width: 1200, height: 750 }));
+  expect(dimensions.source).toMatch(/^data:image\/jpeg/);
+});
+
+test('@claim:no-web-lookup entering a barcode makes no automatic web lookup', async ({ page }) => {
+  await page.goto('/intake');
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(`${request.method()} ${request.url()}`));
+  await page.getByLabel('Barcode or SKU').fill('UNKNOWN-LOOKUP-19');
+  await page.getByLabel('Barcode or SKU').press('Tab');
+  await page.waitForTimeout(300);
+  expect(requests).toEqual([]);
+  await expect(page.getByLabel('Item name')).toHaveValue('');
+});
+
+test('@claim:no-purchase-orders saving a card creates no purchase order', async ({ page }) => {
+  const mutations: string[] = [];
+  page.on('request', (request) => {
+    if (!['GET', 'HEAD'].includes(request.method())) mutations.push(`${request.method()} ${request.url()}`);
+  });
+  await page.goto('/intake');
+  await page.getByLabel('Barcode or SKU').fill('NO-PO-1');
+  await page.getByLabel('Item name').fill('Arrival record only');
+  await page.getByLabel('Location note').fill('Receiving shelf');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+  await page.goto('/records');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup' }).click();
+  const stream = await (await downloadPromise).createReadStream();
+  let backup = '';
+  for await (const chunk of stream) backup += chunk.toString();
+  expect(JSON.parse(backup)).not.toHaveProperty('purchaseOrders');
+  expect(backup.toLowerCase()).not.toContain('purchaseorder');
+  expect(mutations).toEqual([]);
 });
 
 test('@claim:demo-isolated keeps sample cards separate from real cards', async ({ page }) => {

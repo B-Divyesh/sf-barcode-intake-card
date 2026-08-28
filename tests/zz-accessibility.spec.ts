@@ -23,3 +23,65 @@ test('mobile intake fits at 390 pixels and supports keyboard entry', async ({ pa
   await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+test('camera tracks end after Escape and route teardown', async ({ page }) => {
+  await page.goto('/intake');
+  await page.getByRole('button', { name: 'Scan with camera' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect.poll(() => page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => video.srcObject?.getTracks()[0]?.readyState)).toBe('live');
+  await page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => {
+    (window as typeof window & { qaCameraTrack?: MediaStreamTrack }).qaCameraTrack = video.srcObject?.getTracks()[0];
+  });
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { qaCameraTrack?: MediaStreamTrack }).qaCameraTrack?.readyState)).toBe('ended');
+  await expect(page.getByRole('button', { name: 'Scan with camera' })).toBeFocused();
+
+  await page.getByRole('button', { name: 'Scan with camera' }).click();
+  await expect.poll(() => page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => video.srcObject?.getTracks()[0]?.readyState)).toBe('live');
+  await page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => {
+    (window as typeof window & { qaRouteTrack?: MediaStreamTrack }).qaRouteTrack = video.srcObject?.getTracks()[0];
+  });
+  await page.evaluate(() => {
+    history.pushState({}, '', '/records');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.getByRole('heading', { name: 'Find your saved cards' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { qaRouteTrack?: MediaStreamTrack }).qaRouteTrack?.readyState)).toBe('ended');
+});
+
+test('corrupt photos show an announced recovery message without an unhandled error', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/intake');
+  await page.getByLabel('Item photo').setInputFiles({ name: 'corrupt.png', mimeType: 'image/png', buffer: Buffer.from('not an image') });
+  await expect(page.locator('#form-status')).toHaveText('That image could not be read. Choose a JPG, PNG, or WebP photo and try again.');
+  await expect(page.locator('#photo-preview')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('visible controls meet the 44 pixel touch target at 390 pixels', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms', '/license', '/print/demo-bearing?demo=1']) {
+    await page.goto(route);
+    const small = await page.locator('a, button, input:not([type="hidden"]), textarea').evaluateAll((elements) => elements
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+      })
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { label: element.getAttribute('aria-label') || element.textContent?.trim() || element.getAttribute('name'), width: rect.width, height: rect.height };
+      })
+      .filter(({ width, height }) => width < 44 || height < 44));
+    expect(small, `${route} has undersized controls`).toEqual([]);
+  }
+});
+
+test('unknown documents return HTTP 404 with the designed recovery page', async ({ page }) => {
+  const response = await page.goto('/does-not-exist');
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole('heading', { name: 'This card is not in the file' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Return to the intake desk' })).toBeVisible();
+});

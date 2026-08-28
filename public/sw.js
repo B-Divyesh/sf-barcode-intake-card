@@ -1,10 +1,10 @@
-const VERSION = 'barcode-intake-v2';
-const SHELL = ['/', '/offline.html', '/static.css', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/assets/receiving-desk.webp', '/assets/receiving-desk-600.webp', '/assets/app-v2.js', '/assets/app-v2.css', '/assets/scanner-v2.js', '/assets/barcode-v2.js'];
+const VERSION = 'barcode-intake-v3';
+const SHELL = ['/', '/offline.html', '/static.css', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/assets/receiving-desk.webp', '/assets/receiving-desk-600.webp', '/assets/app-v3.js', '/assets/app-v3.css', '/assets/scanner-v3.js', '/assets/barcode-v3.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(VERSION);
-    await cache.addAll(SHELL);
+    await cache.addAll(SHELL.map((url) => new Request(url, { cache: 'reload' })));
     await self.skipWaiting();
   })());
 });
@@ -24,8 +24,10 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).then((response) => {
-      const copy = response.clone();
-      caches.open(VERSION).then((cache) => cache.put('/', copy));
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(VERSION).then((cache) => cache.put('/', copy));
+      }
       return response;
     }).catch(async () => (await caches.match('/')) || (await caches.match('/offline.html'))));
     return;

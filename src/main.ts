@@ -6,10 +6,11 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.1';
+const BUILD = 'v1.0.2';
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
 let scannerStop: (() => void) | undefined;
+let scannerSession = 0;
 
 const escapeHtml = (value: unknown): string => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char] ?? char);
 const routeUrl = (): URL => new URL(location.href);
@@ -133,7 +134,7 @@ async function printPage(id: string): Promise<string> {
   const item = await getItem(isDemo(), id);
   if (!item) return notFound();
   setMeta(`Print ${item.name} — Barcode Intake Card`, 'Print one item card with its barcode and location.', `/print/${id}`);
-  return shell(`<main id="main"><div class="page"><div class="print-controls app-header"><div><p class="eyebrow">Print proof</p><h1 tabindex="-1">Print one item card</h1></div><div class="toolbar"><button class="button" data-action="print">Print card</button><a class="button button-secondary" href="/records${demoSuffix()}" data-link>Back to cards</a></div></div><article class="print-card"><p class="eyebrow">Intake card</p><h2>${escapeHtml(item.name)}</h2><div class="barcode-svg"><svg id="print-barcode" role="img" aria-label="Barcode ${escapeHtml(item.barcode)}"></svg></div><dl><dt>Code</dt><dd class="record-code">${escapeHtml(item.barcode)}</dd><dt>Location</dt><dd>${escapeHtml(item.location)}</dd><dt>Quantity</dt><dd>${item.quantity}</dd>${item.supplier ? `<dt>Supplier</dt><dd>${escapeHtml(item.supplier)}</dd>` : ''}${item.notes ? `<dt>Notes</dt><dd>${escapeHtml(item.notes)}</dd>` : ''}</dl></article></div></main>`, 'records');
+  return shell(`<main id="main"><div class="page"><div class="print-controls app-header"><div><p class="eyebrow">Print proof</p><h1 tabindex="-1">Print one item card</h1></div><div class="toolbar"><button class="button" data-action="print">Print card</button><a class="button button-secondary" href="/records${demoSuffix()}" data-link>Back to cards</a></div></div><article class="print-card"><p class="eyebrow">Intake card</p><h2>${escapeHtml(item.name)}</h2><div class="barcode-svg"><canvas id="print-barcode" role="img" aria-label="Barcode ${escapeHtml(item.barcode)}"></canvas></div><dl><dt>Code</dt><dd class="record-code">${escapeHtml(item.barcode)}</dd><dt>Location</dt><dd>${escapeHtml(item.location)}</dd><dt>Quantity</dt><dd>${item.quantity}</dd>${item.supplier ? `<dt>Supplier</dt><dd>${escapeHtml(item.supplier)}</dd>` : ''}${item.notes ? `<dt>Notes</dt><dd>${escapeHtml(item.notes)}</dd>` : ''}</dl></article></div></main>`, 'records');
 }
 
 function privacyPage(): string {
@@ -157,6 +158,7 @@ function notFound(): string {
 }
 
 async function render(moveFocus = false): Promise<void> {
+  stopScanner();
   if (isDemo()) await seedDemo();
   const path = routeUrl().pathname.replace(/\/$/, '') || '/';
   let html: string;
@@ -188,6 +190,12 @@ function bindPage(): void {
   document.querySelector('#csv-file')?.addEventListener('change', loadCsv);
   document.querySelector('#record-search')?.addEventListener('input', filterRecords);
   document.querySelector('#json-import')?.addEventListener('change', importJson);
+  const scannerDialog = document.querySelector<HTMLDialogElement>('#scanner-dialog');
+  scannerDialog?.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeScanner();
+  });
+  scannerDialog?.addEventListener('close', stopScanner);
 }
 
 async function saveForm(event: Event): Promise<void> {
@@ -245,28 +253,41 @@ async function loadCsv(event: Event): Promise<void> {
 }
 
 async function loadPhoto(event: Event): Promise<void> {
-  const file = (event.target as HTMLInputElement).files?.[0];
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
+  const status = document.querySelector('#form-status');
   if (!file.type.startsWith('image/')) {
-    const status = document.querySelector('#form-status');
     if (status) status.textContent = 'That file is not an image. Choose a photo and try again.';
+    input.value = '';
     return;
   }
   const image = new Image();
-  image.src = URL.createObjectURL(file);
-  await image.decode();
-  const max = 1200;
-  const scale = Math.min(1, max / Math.max(image.naturalWidth, image.naturalHeight));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(image.naturalWidth * scale);
-  canvas.height = Math.round(image.naturalHeight * scale);
-  canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height);
-  URL.revokeObjectURL(image.src);
-  const dataUrl = canvas.toDataURL('image/jpeg', .78);
-  const hidden = document.querySelector<HTMLInputElement>('#photo-data');
-  const preview = document.querySelector<HTMLImageElement>('#photo-preview');
-  if (hidden) hidden.value = dataUrl;
-  if (preview) { preview.src = dataUrl; preview.hidden = false; }
+  const objectUrl = URL.createObjectURL(file);
+  image.src = objectUrl;
+  try {
+    await image.decode();
+    if (!image.naturalWidth || !image.naturalHeight) throw new Error('empty image');
+    const max = 1200;
+    const scale = Math.min(1, max / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.naturalWidth * scale);
+    canvas.height = Math.round(image.naturalHeight * scale);
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('canvas unavailable');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', .78);
+    const hidden = document.querySelector<HTMLInputElement>('#photo-data');
+    const preview = document.querySelector<HTMLImageElement>('#photo-preview');
+    if (hidden) hidden.value = dataUrl;
+    if (preview) { preview.src = dataUrl; preview.hidden = false; }
+    if (status) status.textContent = `Photo ready at ${canvas.width} × ${canvas.height} pixels.`;
+  } catch {
+    input.value = '';
+    if (status) status.textContent = 'That image could not be read. Choose a JPG, PNG, or WebP photo and try again.';
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 async function openScanner(): Promise<void> {
@@ -274,6 +295,8 @@ async function openScanner(): Promise<void> {
   const video = document.querySelector<HTMLVideoElement>('#scanner-video');
   const status = document.querySelector('#scanner-status');
   if (!dialog || !video || !status) return;
+  stopScanner();
+  const session = ++scannerSession;
   lastFocus = document.activeElement as HTMLElement;
   dialog.showModal();
   try {
@@ -287,6 +310,11 @@ async function openScanner(): Promise<void> {
       void checkBarcode();
       setTimeout(closeScanner, 350);
     });
+    if (session !== scannerSession || !dialog.open) {
+      controls.stop();
+      (video.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
+      return;
+    }
     scannerStop = () => controls.stop();
     status.textContent = 'Camera ready. Hold one barcode inside the frame.';
   } catch (error) {
@@ -294,10 +322,19 @@ async function openScanner(): Promise<void> {
   }
 }
 
+function stopScanner(): void {
+  scannerSession += 1;
+  scannerStop?.();
+  scannerStop = undefined;
+  const video = document.querySelector<HTMLVideoElement>('#scanner-video');
+  (video?.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
+  if (video) video.srcObject = null;
+}
+
 function closeScanner(): void {
-  scannerStop?.(); scannerStop = undefined;
+  stopScanner();
   const dialog = document.querySelector<HTMLDialogElement>('#scanner-dialog');
-  dialog?.close();
+  if (dialog?.open) dialog.close();
   lastFocus?.focus();
 }
 
@@ -339,14 +376,14 @@ function filterRecords(event: Event): void {
 }
 
 async function drawBarcode(): Promise<void> {
-  const svg = document.querySelector<SVGElement>('#print-barcode');
+  const canvas = document.querySelector<HTMLCanvasElement>('#print-barcode');
   const code = document.querySelector('.print-card .record-code')?.textContent?.trim();
-  if (!svg || !code) return;
+  if (!canvas || !code) return;
   try {
     const { default: JsBarcode } = await import('jsbarcode');
-    JsBarcode(svg, code, { format: 'CODE128', displayValue: false, margin: 0, height: 72, width: 2 });
+    JsBarcode(canvas, code, { format: 'CODE128', displayValue: false, background: '#ffffff', lineColor: '#000000', margin: 12, height: 72, width: 2 });
   } catch {
-    svg.setAttribute('aria-label', `Barcode image unavailable. Code ${code}`);
+    canvas.setAttribute('aria-label', `Barcode image unavailable. Code ${code}`);
   }
 }
 
@@ -375,6 +412,7 @@ document.addEventListener('click', (event) => {
 });
 
 window.addEventListener('popstate', () => void render(true));
+window.addEventListener('pagehide', stopScanner);
 window.addEventListener('online', () => { const status = document.querySelector('.status-line'); if (status) status.textContent = 'Back online. Local cards were available throughout.'; });
 window.addEventListener('offline', () => { const status = document.querySelector('.status-line'); if (status) status.textContent = 'Offline. You can keep working with local cards.'; });
 
