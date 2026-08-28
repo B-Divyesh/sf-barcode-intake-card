@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms', '/license']) {
+for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms']) {
   test(`page basics and axe: ${route}`, async ({ page }) => {
     const errors: string[] = [];
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
@@ -30,7 +30,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v8.js', async (route) => {
+  await page.route('**/assets/app-v9.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();
@@ -86,7 +86,7 @@ test('corrupt photos show an announced recovery message without an unhandled err
 
 test('visible controls meet the 44 pixel touch target at 390 pixels', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms', '/license', '/print/demo-bearing?demo=1']) {
+  for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms', '/print/demo-bearing?demo=1']) {
     await page.goto(route);
     const small = await page.locator('a, button, input:not([type="hidden"]), textarea').evaluateAll((elements) => elements
       .filter((element) => {
@@ -101,6 +101,23 @@ test('visible controls meet the 44 pixel touch target at 390 pixels', async ({ p
       .filter(({ width, height }) => width < 44 || height < 44));
     expect(small, `${route} has undersized controls`).toEqual([]);
   }
+});
+
+test('the retired license URL redirects to the intake form', async ({ page }) => {
+  const response = await page.goto('/license');
+  expect(response?.status()).toBe(200);
+  await expect(page).toHaveURL(/\/intake$/);
+  await expect(page.getByRole('heading', { name: 'Record a new item' })).toBeVisible();
+});
+
+test('external Param Factory links say they leave the product', async ({ page }) => {
+  for (const route of ['/', '/privacy', '/terms']) {
+    await page.goto(route);
+    await expect(page.getByRole('link', { name: 'Built by Param Factory (external site)' })).toHaveAttribute('href', 'https://sociobot.in');
+  }
+  const response = await page.goto('/does-not-exist');
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole('link', { name: 'Built by Param Factory (external site)' })).toHaveAttribute('href', 'https://sociobot.in');
 });
 
 test('unknown documents return HTTP 404 with the designed recovery page', async ({ page }) => {

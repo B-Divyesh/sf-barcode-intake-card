@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const productionCsp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
-const appDocument = /^\/(?:|demo|intake|records|privacy|terms|license|print\/[^/]+)\/?$/;
+const appDocument = /^\/(?:|demo|intake|records|privacy|terms|print\/[^/]+)\/?$/;
 
 export default defineConfig({
   plugins: [{
@@ -14,6 +14,12 @@ export default defineConfig({
         response.setHeader('X-Content-Type-Options', 'nosniff');
         response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         const path = new URL(request.url ?? '/', 'http://preview.local').pathname;
+        if (path === '/license') {
+          response.statusCode = 301;
+          response.setHeader('Location', '/intake');
+          response.end();
+          return;
+        }
         if (request.headers.accept?.includes('text/html') && !appDocument.test(path) && path !== '/404.html') {
           response.statusCode = 404;
           response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -28,13 +34,13 @@ export default defineConfig({
     target: 'es2022',
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/app-v8.js',
-        chunkFileNames: 'assets/[name]-v8.js',
+        entryFileNames: 'assets/app-v9.js',
+        chunkFileNames: 'assets/[name]-v9.js',
         manualChunks(id) {
           if (id.includes('@zxing')) return 'scanner';
           if (id.includes('jsbarcode')) return 'barcode';
         },
-        assetFileNames: (assetInfo) => assetInfo.names.some((name) => name.endsWith('.css')) ? 'assets/app-v8.css' : 'assets/[name]-[hash][extname]'
+        assetFileNames: (assetInfo) => assetInfo.names.some((name) => name.endsWith('.css')) ? 'assets/app-v9.css' : 'assets/[name]-[hash][extname]'
       }
     }
   }

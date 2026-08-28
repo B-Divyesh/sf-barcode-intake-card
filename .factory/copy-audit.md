@@ -9,7 +9,7 @@ Counted with contractions and hyphenated terms as one word. Every landing senten
 | It opens sample workshop cards you can search, edit, and print. | 11 | pass |
 | Cards stay in this browser | 5 | pass |
 | Works offline after the first visit | 6 | pass |
-| Camera scanning fills the barcode field | 6 | pass |
+| Free to use — no account or checkout | 7 | pass |
 | Record mixed stock before choosing a full inventory system. | 9 | pass |
 | Review and update the item card before printing it. | 9 | pass |
 | Scan a barcode, type the code, or match a supplier CSV. | 11 | pass |
@@ -22,7 +22,7 @@ Counted with contractions and hyphenated terms as one word. Every landing senten
 | Export a file when you need a backup or another system. | 11 | pass |
 | You choose the supplier file. | 5 | pass |
 | It is read in this browser. | 6 | pass |
-| Manual intake and exports are included on this device. | 9 | pass |
+| Camera scanning, manual entry, and exports are free to use. | 10 | pass |
 | The camera starts only after you choose Scan with camera. | 10 | pass |
 
 No sentence exceeds 22 words. No banned word appears.

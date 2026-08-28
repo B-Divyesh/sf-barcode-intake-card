@@ -9,7 +9,7 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v8.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v9.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -28,9 +28,9 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
   await page.reload();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v8'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v9'))).toBe(true);
   await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v4'))).toBe(false);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v8.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v9.js')))).toBe(true);
 });
 
 test('@claim:local-only keeps cards, chosen CSV rows, and photos in this browser without an account or sync', async ({ page }) => {
@@ -56,6 +56,28 @@ test('@claim:local-only keeps cards, chosen CSV rows, and photos in this browser
   await expect(page.locator('#photo-preview')).toHaveAttribute('src', /^data:image\/jpeg/);
   await expect(page.getByRole('link', { name: /sign in|log in|create account/i })).toHaveCount(0);
   expect(outside).toEqual([]);
+});
+
+test('@claim:free-no-checkout records, prints, and exports without an account or checkout', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('/');
+  await expect(page.getByText('Free to use — no account or checkout')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Scan barcodes with the camera' })).toBeVisible();
+  await expect(page.getByText('Camera scanning, manual entry, and exports are free to use.')).toBeVisible();
+  await page.getByRole('link', { name: 'Record an item' }).click();
+  await expect(page.getByRole('button', { name: 'Scan with camera' })).toBeEnabled();
+  await page.getByLabel('Barcode or SKU').fill('FREE-1');
+  await page.getByLabel('Item name').fill('Free flow item');
+  await page.getByLabel('Location note').fill('Bench F-01');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+  await page.getByRole('link', { name: 'Back to cards' }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export CSV' }).click();
+  await downloadPromise;
+  await expect(page.locator('a[href*="checkout"], a[href*="api.sociobot.in"], form[action*="checkout"]')).toHaveCount(0);
+  expect(requests.every((url) => new URL(url).origin === baseOrigin)).toBe(true);
 });
 
 test('@claim:manual-intake saves a manually entered item card', async ({ page }) => {
@@ -112,6 +134,7 @@ test('@claim:csv-export exports one row per demo card', async ({ page }) => {
 test('@claim:search-cards filters saved cards by barcode, item, supplier, and location', async ({ page }) => {
   await page.goto('/demo');
   const search = page.getByLabel('Search cards');
+  await expect(search).toHaveAttribute('placeholder', 'Barcode, item, supplier, or location');
   const cases = [
     ['5901234123457', '608ZZ shielded bearing'],
     ['USB-C panel cable', 'USB-C panel cable, 30 cm'],

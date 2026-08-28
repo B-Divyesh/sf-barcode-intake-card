@@ -2,7 +2,7 @@
 
 Turn a barcode scan into a private, printable item card.
 
-Barcode Intake Card records incoming stock for micro-sellers and workshops, and works offline after your first visit. Cards, supplier CSV rows, and item photos stay in the browser.
+Barcode Intake Card records incoming stock for micro-sellers and workshops, and works offline after your first visit. Cards, supplier CSV rows, and item photos stay in the browser. It is free to use with no account or checkout.
 
 Live site: <https://barcode-intake-card.sociobot.in>
 
@@ -53,7 +53,7 @@ The service worker caches the app shell. Export a JSON backup before clearing si
 
 ## Camera scanning
 
-Camera scanning, manual intake, and all exports are included. Choose **Scan with camera** to open the preview. A decoded barcode fills the barcode field. You can always type it instead.
+Camera scanning, manual entry, and exports are free to use. Choose **Scan with camera** to open the preview. A decoded barcode fills the barcode field. You can always type it instead.
 
 ## Deployment
 
