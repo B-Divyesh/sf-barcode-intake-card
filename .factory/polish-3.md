@@ -1,7 +1,7 @@
 # Polish 3 — complete cumulative repair map
 
-**Repair commits:** `f0244ec840bdaa4e91279a8234be3d5be72ca2a1` and `87722545784a6066a50a35809372475fce71a7ad`  
-**Live release:** <https://barcode-intake-card.sociobot.in> (v1.0.8)  
+**Repair commits:** `f0244ec840bdaa4e91279a8234be3d5be72ca2a1` and `87722545784a6066a50a35809372475fce71a7ad`
+**Live release:** <https://barcode-intake-card.sociobot.in> (v1.0.8)
 **Live evidence:** `.factory/qa-evidence/polish-3-live/`
 
 The initial v1.0.7 repair closed the four review-3 findings. The final v1.0.8
