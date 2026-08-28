@@ -6,7 +6,7 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v4.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v5.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -18,16 +18,16 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
   await page.goto('/demo');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.evaluate(async () => {
-    await caches.open('barcode-intake-v3');
+    await caches.open('barcode-intake-v4');
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map((registration) => registration.unregister()));
   });
   await page.reload();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v4'))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v3'))).toBe(false);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v4.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v5'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v4'))).toBe(false);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v5.js')))).toBe(true);
 });
 
 test('@claim:local-only keeps item data in this browser without an account or sync', async ({ page }) => {

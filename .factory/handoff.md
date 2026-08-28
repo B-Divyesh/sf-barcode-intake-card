@@ -8,7 +8,7 @@ All three release blockers from verifier commit `c0e219476f2e67ac69633938824ad70
 2. The intake form now accepts only the printable Code 128 range and explains it before save. The exact verifier value `部品-１２３` is rejected with an announced recovery message. If an older stored record still cannot render, the print page shows a visible alert, disables **Print card**, and links directly to **Edit this card**.
 3. **Start for real** now clears the isolated demo database before opening real intake. Reopening `/demo` reseeds the original three samples, so edits cannot survive demo exit.
 
-The immutable app shell, service-worker cache, install URL, and visible build number advance from v3/v1.0.2 to v4/v1.0.3.
+The immutable app shell, service-worker cache, install URL, and visible build number advance from v3/v1.0.2 to v5/v1.0.3.
 
 ## Exact regression coverage
 
@@ -19,7 +19,7 @@ The immutable app shell, service-worker cache, install URL, and visible build nu
 - `部品-１２３` cannot be saved, while the supported sample still produces contrasting pixels and decodes as `5901234123457`;
 - a legacy unsupported code gets a visible, announced render error, disabled print action, and direct edit action;
 - an edited demo note returns to `Check bore before restocking.` after **Start for real** and demo re-entry;
-- activation deletes a seeded `barcode-intake-v3` cache and precaches the v4 shell.
+- activation deletes a seeded stale cache and precaches the v5 shell.
 
 ## Local release verification — 2026-08-28
 
