@@ -2,21 +2,21 @@
 
 Turn a barcode scan into a private, printable item card.
 
-Barcode Intake Card is an offline-first receiving desk for micro-sellers and workshops. It records mixed stock before you need an inventory system. Cards, supplier CSV rows, and item photos stay in the browser.
+Barcode Intake Card records incoming stock for micro-sellers and workshops, and works offline after your first visit. Cards, supplier CSV rows, and item photos stay in the browser.
 
 Live site: <https://barcode-intake-card.sociobot.in>
 
 ## Try the isolated demo
 
-Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/demo>. It loads three realistic workshop items in a separate IndexedDB database. Choose **Reset demo** to restore the samples. Choose **Start for real** to clear the demo and leave without copying it.
+Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/?demo=1>. It opens sample workshop cards stored separately from your real cards. Choose **Reset demo** to restore the samples. Choose **Start for real** to clear the demo and leave without copying it.
 
 ## What it does
 
 - Records a barcode, item name, supplier, location, quantity, notes, and a reduced photo.
-- Opens the device camera for barcode scanning with no account or checkout.
-- Matches a barcode against a CSV file chosen by the user.
+- Opens a camera preview only after you choose Scan with camera.
+- Matches a barcode against a supplier CSV you choose.
 - Warns about saved cards with the same barcode.
-- Searches saved cards and prints one-up cards with Code 128 barcodes. Printable codes use English letters, numbers, spaces, and punctuation.
+- Searches saved cards and prints one item card per page with a Code 128 barcode. Printable codes use English letters, numbers, spaces, and punctuation.
 - Exports all cards as CSV or a complete JSON backup.
 - Imports its JSON backup and works offline after the first visit.
 
@@ -50,9 +50,9 @@ Real cards use IndexedDB database `barcode-intake-real`. Demo cards use `barcode
 
 The service worker caches the app shell. Export a JSON backup before clearing site data or moving devices. See `/privacy` and `/terms` in the app.
 
-## Camera scanning
+## Camera preview
 
-Camera scanning, manual intake, and all exports are included. Choose **Scan with camera** from the intake form to request camera access. You can always type a barcode instead.
+Camera preview, manual intake, and all exports are included. Choose **Scan with camera** from the intake form to request camera access. You can always type a barcode instead.
 
 ## Deployment
 

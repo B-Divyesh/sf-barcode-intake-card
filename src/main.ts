@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.4';
+const BUILD = 'v1.0.5';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
@@ -23,6 +23,10 @@ function setMeta(title: string, description: string, canonicalPath: string): voi
   document.title = title;
   document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', description);
   document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', `https://barcode-intake-card.sociobot.in${canonicalPath}`);
+  document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.setAttribute('content', title);
+  document.querySelector<HTMLMetaElement>('meta[property="og:description"]')?.setAttribute('content', description);
+  document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')?.setAttribute('content', title);
+  document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')?.setAttribute('content', description);
 }
 
 function navigate(path: string, replace = false): void {
@@ -36,7 +40,7 @@ function shell(content: string, active = ''): string {
   return `<div class="shell">
     <header class="site-header">
       <div class="masthead">
-        <a class="wordmark" href="/" data-link>Barcode Intake Card<small>Private receiving desk</small></a>
+        <a class="wordmark" href="/" data-link>Barcode Intake Card<small>Private item cards</small></a>
         <nav class="site-nav" aria-label="Primary">
           <a href="/intake${demoSuffix()}" data-link ${active === 'intake' ? 'aria-current="page"' : ''}>Intake</a>
           <a href="/records${demoSuffix()}" data-link ${active === 'records' ? 'aria-current="page"' : ''}>Cards</a>
@@ -47,46 +51,46 @@ function shell(content: string, active = ''): string {
     </header>
     ${demo ? `<aside class="demo-banner" aria-label="Demo status"><div class="demo-banner-inner"><strong>Demo — sample data, nothing is saved to your real cards.</strong><button class="link-button" data-action="reset-demo">Reset demo</button><a href="/intake" data-action="start-real">Start for real</a></div></aside>` : '<div></div>'}
     ${content}
-    <footer class="site-footer"><div class="footer-inner"><span>Turn a barcode into a private, printable item card.</span><div class="footer-links"><a href="/privacy" data-link>Privacy</a><a href="/terms" data-link>Terms</a><a href="https://sociobot.in" rel="external">Built by Param Factory</a><span>${BUILD}</span><span>Hero art generated for this product.</span></div></div></footer>
+    <footer class="site-footer"><div class="footer-inner"><span>Turn a barcode into a private, printable item card.</span><div class="footer-links"><a href="/privacy" data-link>Privacy</a><a href="/terms" data-link>Terms</a><a href="https://sociobot.in" rel="external">Built by Param Factory</a><span>${BUILD}</span></div></div></footer>
     <div class="visually-hidden" aria-live="polite" id="route-announcer"></div>
   </div>`;
 }
 
 function landing(): string {
-  setMeta('Barcode Intake Card — Make private stock cards', 'Scan or enter a barcode, add item details, and print a private intake card.', '/');
+  setMeta('Barcode Intake Card — Make printable item cards', 'Scan or enter a barcode, add item details, and print a private item card.', '/');
   return shell(`<main id="main">
     <article class="page hero">
-      <div class="folio"><span>Workshop utility no. 01</span><span>Local edition · 2026</span></div>
+      <div class="folio" aria-hidden="true"></div>
       <div class="hero-grid">
         <div>
-          <p class="eyebrow">From parcel to shelf</p>
+          <p class="eyebrow">For mixed-stock intake</p>
           <h1 tabindex="-1">Turn scans into item cards</h1>
           <p class="lede">For small sellers and workshops receiving mixed stock without a full inventory system.</p>
-          <div class="hero-actions"><a class="button" href="/demo" data-link>Try it with sample data <span aria-hidden="true">→</span></a><p class="action-note">It opens three ready-made cards you can search, edit, and print.</p></div>
-          <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Camera scanning is included</li></ul>
+          <div class="hero-actions"><a class="button" href="/demo" data-link>Try it with sample data <span aria-hidden="true">→</span></a><p class="action-note">It opens sample workshop cards you can search, edit, and print.</p></div>
+          <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Camera preview opens when you choose it</li></ul>
         </div>
         <figure class="hero-figure">
           <picture><source media="(max-width: 760px)" srcset="/assets/receiving-desk-600.webp" type="image/webp"><source srcset="/assets/receiving-desk.webp" type="image/webp"><img src="/assets/receiving-desk.webp" width="900" height="600" alt="An engraved workshop desk with parts, a parcel, a scanner, and a blank intake card." fetchpriority="high" decoding="async"></picture>
-          <figcaption>Fig. 01 — Receive the odd parts first. Choose a stock system later.</figcaption>
+          <figcaption>Fig. 01 — Record mixed stock before choosing a full inventory system.</figcaption>
         </figure>
       </div>
       <section class="section" aria-labelledby="preview-title">
-        <div class="section-heading"><h2 id="preview-title">A card before a catalogue</h2><p>Record the facts you know now. Keep uncertainty visible until you review the item.</p></div>
+        <div class="section-heading"><h2 id="preview-title">Preview an item card</h2><p>Review and update the item card before printing it.</p></div>
         <div class="preview-sheet" aria-label="Sample intake card preview">
           <div><p class="eyebrow">Intake 0142</p><h3>608ZZ shielded bearing</h3><p>North Street Components</p><div class="barcode-display" aria-hidden="true"></div><p class="record-code">5901234123457</p></div>
           <div class="preview-meta"><div><small>Location</small><strong>Bin A-14</strong></div><div><small>Quantity</small><strong>12</strong></div><div><small>Status</small><strong>Ready to review</strong></div><div><small>Privacy</small><strong>Stored locally</strong></div></div>
         </div>
       </section>
-      <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Use a scanner, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Scan with your camera or enter any printed code.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or move on</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>
-      <section class="section" aria-labelledby="bounds-title"><div class="section-heading"><h2 id="bounds-title">Your intake desk, not an ERP</h2><p>The tool stays small on purpose.</p></div><div class="limits"><p><strong>No automatic web lookup.</strong><br>Supplier and stock details do not leave your device.</p><p><strong>No purchase orders.</strong><br>This records arrivals. It does not run procurement.</p><p><strong>No account or sync.</strong><br>Export a file when you need a backup or another system.</p><p><strong>CSV lookups are explicit.</strong><br>You choose the supplier file. It is read in this browser.</p></div></section>
-      <section class="section" aria-labelledby="camera-title"><div class="price-strip"><div><p class="eyebrow">Camera reader</p><h2 id="camera-title">Scan without a checkout</h2><p>Camera scanning, manual intake, and exports are included on this device.</p></div><div><a class="button" href="/intake" data-link>Open the intake desk</a></div></div><p>The camera starts only after you choose <strong>Scan with camera</strong>.</p></section>
+      <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Use a scanner, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Scan or type a code made from English letters, numbers, spaces, and punctuation.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or export the card</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>
+      <section class="section" aria-labelledby="bounds-title"><div class="section-heading"><h2 id="bounds-title">What this tool does not do</h2></div><div class="limits"><p><strong>No automatic web lookup.</strong><br>Supplier and stock details do not leave your device.</p><p><strong>No purchase orders.</strong><br>This records arrivals. It does not run procurement.</p><p><strong>No account or sync.</strong><br>Export a file when you need a backup or another system.</p><p><strong>CSV lookups are explicit.</strong><br>You choose the supplier file. It is read in this browser.</p></div></section>
+      <section class="section" aria-labelledby="camera-title"><div class="price-strip"><div><p class="eyebrow">Camera reader</p><h2 id="camera-title">Camera preview is included</h2><p>Manual intake and exports are included on this device.</p></div><div><a class="button" href="/intake" data-link>Record an item</a></div></div><p>The camera starts only after you choose <strong>Scan with camera</strong>.</p></section>
     </article>
   </main>`);
 }
 
 async function demoPage(): Promise<string> {
   await seedDemo();
-  setMeta('Demo — Barcode Intake Card', 'Try Barcode Intake Card with three sample workshop items.', '/demo');
+  setMeta('Demo — Barcode Intake Card', 'Try Barcode Intake Card with sample workshop items.', '/demo');
   return recordsPage(true, true);
 }
 
@@ -96,7 +100,7 @@ async function intakePage(): Promise<string> {
   const existing = editId ? await getItem(demo, editId) : undefined;
   setMeta(`${existing ? 'Edit card' : 'New intake'} — Barcode Intake Card`, 'Enter a barcode and record an item in this browser.', '/intake');
   return shell(`<main id="main"><div class="page">
-    <div class="app-header"><div><p class="eyebrow">Receiving desk</p><h1 tabindex="-1">${existing ? 'Review this item card' : 'Record a new item'}</h1></div><a class="button button-secondary" href="/records${demoSuffix()}" data-link>View saved cards</a></div>
+    <div class="app-header"><div><p class="eyebrow">Item intake</p><h1 tabindex="-1">${existing ? 'Review this item card' : 'Record a new item'}</h1></div><a class="button button-secondary" href="/records${demoSuffix()}" data-link>View saved cards</a></div>
     <p class="status-line" id="form-status" role="status"></p>
     <div class="intake-layout">
       <form id="intake-form" novalidate>
@@ -127,7 +131,7 @@ async function recordsPage(fromDemoRoute = false, nested = false): Promise<strin
   const items = await getItems(demo);
   setMeta(`${demo ? 'Demo' : 'Saved cards'} — Barcode Intake Card`, 'Search, print, and export item cards stored in this browser.', demo ? '/demo' : '/records');
   const list = items.length ? `<div class="record-list">${items.map((item) => `<article class="record"><div class="record-code">${escapeHtml(item.barcode)}</div><div><h2>${escapeHtml(item.name)}</h2><p>${escapeHtml(item.location)} · Qty ${item.quantity}${item.supplier ? ` · ${escapeHtml(item.supplier)}` : ''}</p></div><div class="record-actions"><a class="button button-secondary" href="/intake?edit=${encodeURIComponent(item.id)}${demo ? '&demo=1' : ''}" data-link>Edit card</a><a class="button button-secondary" href="/print/${encodeURIComponent(item.id)}${demo ? '?demo=1' : ''}" data-link>Print card</a><button class="button button-danger" data-action="delete-item" data-id="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}">Delete</button></div></article>`).join('')}</div>` : `<div class="empty"><h2>No item cards yet</h2><p>Saved items will appear here. Record a barcode and location to make the first card.</p><a class="button" href="/intake${demo ? '?demo=1' : ''}" data-link>Record an item</a></div>`;
-  const content = `<main id="main"><div class="page"><div class="app-header"><div><p class="eyebrow">${demo ? 'Sample ledger' : 'Local ledger'}</p><h1 tabindex="-1">${demo ? 'Review sample intake cards' : 'Find your saved cards'}</h1></div><a class="button" href="/intake${demo ? '?demo=1' : ''}" data-link>Record an item</a></div><div class="toolbar"><label class="field"><span>Search cards</span><input id="record-search" type="search" placeholder="Barcode, item, or location"></label><button class="button button-secondary" data-action="export-csv" ${items.length ? '' : 'disabled'}>Export CSV</button><button class="button button-secondary" data-action="export-json" ${items.length ? '' : 'disabled'}>Export backup</button><label class="button button-secondary" for="json-import">Import backup</label><input id="json-import" type="file" accept="application/json" hidden></div><p class="status-line" id="records-status" role="status">${items.length} ${items.length === 1 ? 'card' : 'cards'} stored ${demo ? 'in the demo' : 'in this browser'}.</p>${list}</div></main>`;
+  const content = `<main id="main"><div class="page"><div class="app-header"><div><p class="eyebrow">${demo ? 'Sample item cards' : 'Saved item cards'}</p><h1 tabindex="-1">${demo ? 'Review sample intake cards' : 'Find your saved cards'}</h1></div><a class="button" href="/intake${demo ? '?demo=1' : ''}" data-link>Record an item</a></div><div class="toolbar"><label class="field"><span>Search cards</span><input id="record-search" type="search" placeholder="Barcode, item, or location"></label><button class="button button-secondary" data-action="export-csv" ${items.length ? '' : 'disabled'}>Export CSV</button><button class="button button-secondary" data-action="export-json" ${items.length ? '' : 'disabled'}>Export backup</button><label class="button button-secondary" for="json-import">Import backup</label><input id="json-import" type="file" accept="application/json" hidden></div><p class="status-line" id="records-status" role="status">${items.length} ${items.length === 1 ? 'card' : 'cards'} stored ${demo ? 'in the demo' : 'in this browser'}.</p>${list}</div></main>`;
   return nested ? shell(content, 'records') : shell(content, 'records');
 }
 
@@ -145,17 +149,17 @@ function privacyPage(): string {
 
 function termsPage(): string {
   setMeta('Terms — Barcode Intake Card', 'Terms for using Barcode Intake Card.', '/terms');
-  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Terms · 28 August 2026</p><h1 tabindex="-1">Use the tool as your own record</h1><p class="lede">You are responsible for checking item details, labels, backups, and camera results.</p><h2>What the tool provides</h2><p>Barcode Intake Card records information you enter and creates printable cards. Camera scanning, manual intake, and exports are included. It is not a product database, accounting system, or safety certification.</p><h2>No warranty</h2><p>The software is provided “as is” under the MIT License. Check every scan and print before relying on it.</p><h2>Your data</h2><p>You control your local records and backups. Removing browser data can remove your cards.</p></article></main>`);
+  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Terms · 28 August 2026</p><h1 tabindex="-1">Use the tool as your own record</h1><p class="lede">You are responsible for checking item details, labels, backups, and camera results.</p><h2>What the tool provides</h2><p>Barcode Intake Card records information you enter and creates printable cards. Camera preview, manual intake, and exports are included. It is not a product database, accounting system, or safety certification.</p><h2>No warranty</h2><p>The software is provided “as is” under the MIT License. Check every scan and print before relying on it.</p><h2>Your data</h2><p>You control your local records and backups. Removing browser data can remove your cards.</p></article></main>`);
 }
 
 function licensePage(): string {
-  setMeta('Camera scanning — Barcode Intake Card', 'Camera scanning is included in Barcode Intake Card.', '/license');
-  return shell(`<main id="main"><div class="page legal"><p class="eyebrow">Camera reader</p><h1 tabindex="-1">Camera scanning is included</h1><p class="lede">There is no license, checkout, or account to set up.</p><div class="license-box"><p>Open the intake desk and choose <strong>Scan with camera</strong> when you are ready to grant camera access.</p><p><a class="button" href="/intake" data-link>Open the intake desk</a></p></div><p>Manual barcode entry and data export are available too. Read the <a href="/terms" data-link>terms</a> and <a href="/privacy" data-link>privacy policy</a>.</p></div></main>`);
+  setMeta('Camera preview — Barcode Intake Card', 'Open the camera preview from the Barcode Intake Card intake form.', '/license');
+  return shell(`<main id="main"><div class="page legal"><p class="eyebrow">Camera reader</p><h1 tabindex="-1">Open the camera preview</h1><p class="lede">There is no license, checkout, or account to set up.</p><div class="license-box"><p>Open the intake form and choose <strong>Scan with camera</strong> when you are ready to grant camera access.</p><p><a class="button" href="/intake" data-link>Record an item</a></p></div><p>Manual barcode entry and data export are available too. Read the <a href="/terms" data-link>terms</a> and <a href="/privacy" data-link>privacy policy</a>.</p></div></main>`);
 }
 
 function notFound(): string {
   setMeta('Page not found — Barcode Intake Card', 'Return to Barcode Intake Card.', '/404');
-  return shell(`<main id="main"><div class="page not-found"><p class="eyebrow">Misprint · 404</p><h1 tabindex="-1">This card is not in the file</h1><p class="lede">The address may be wrong, or the card may have moved.</p><a class="button" href="/" data-link>Return to the intake desk</a></div></main>`);
+  return shell(`<main id="main"><div class="page not-found"><p class="eyebrow">Page not found · 404</p><h1 tabindex="-1">This card is not in the file</h1><p class="lede">The address may be wrong, or the card may have moved.</p><a class="button" href="/intake" data-link>Return to the intake form</a></div></main>`);
 }
 
 async function render(moveFocus = false): Promise<void> {
@@ -163,7 +167,8 @@ async function render(moveFocus = false): Promise<void> {
   if (isDemo()) await seedDemo();
   const path = routeUrl().pathname.replace(/\/$/, '') || '/';
   let html: string;
-  if (path === '/') html = landing();
+  if (path === '/' && isDemo()) html = await recordsPage(true);
+  else if (path === '/') html = landing();
   else if (path === '/demo') html = await demoPage();
   else if (path === '/intake') html = await intakePage();
   else if (path === '/records') html = await recordsPage();
@@ -460,7 +465,7 @@ document.addEventListener('click', (event) => {
     const name = target.dataset.name ?? 'this item';
     if (confirm(`Delete ${name}? This cannot be undone.`)) void removeItem(isDemo(), target.dataset.id ?? '').then(() => render());
   } else if (action === 'reset-demo') {
-    void clearItems(true).then(seedDemo).then(() => render());
+    void clearItems(true).then(seedDemo).then(() => navigate('/demo', true));
   } else if (action === 'start-real') {
     event.preventDefault();
     void clearItems(true).then(() => navigate('/intake')).catch(() => {

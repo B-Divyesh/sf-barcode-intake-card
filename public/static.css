@@ -1,5 +1,23 @@
-body { margin: 0; padding: 32px; background: #f1eee5; color: #171714; font: 18px/1.5 Arial, sans-serif; }
-main { max-width: 760px; margin: 10vh auto; border-top: 8px solid; padding-top: 24px; }
-h1 { font: 700 clamp(44px, 9vw, 80px)/.95 Georgia, serif; letter-spacing: -.04em; }
-a { color: #711e16; font-weight: 700; }
-.button { display: inline-block; background: #171714; color: #fffdf6; padding: 12px 18px; }
+:root { color-scheme: light; --paper: #f1eee5; --sheet: #fffdf6; --ink: #171714; --red: #711e16; }
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; background: var(--paper); color: var(--ink); font: 18px/1.5 Arial, sans-serif; }
+a { color: inherit; font-weight: 700; text-underline-offset: 3px; }
+a:not(.wordmark):not(.button) { display: inline-flex; align-items: center; min-height: 45px; min-width: 44px; }
+:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+.skip-link { position: fixed; top: -80px; left: 16px; z-index: 2; padding: 12px 16px; background: var(--ink); color: var(--sheet); }
+.skip-link:focus { top: 12px; }
+.site-header, .site-footer { border-color: var(--ink); border-style: solid; }
+.site-header { border-width: 0 0 2px; }
+.masthead, .footer-inner { max-width: 1240px; margin: auto; padding: 14px 24px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; }
+.wordmark { min-height: 44px; display: flex; flex-direction: column; justify-content: center; font: 700 clamp(20px, 4vw, 29px)/.9 Georgia, serif; text-decoration: none; }
+.wordmark small { margin-top: 7px; font: 700 10px/1 Arial, sans-serif; letter-spacing: .15em; text-transform: uppercase; }
+.site-nav, .footer-links { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 14px; }
+.page { max-width: 1240px; min-height: 55vh; margin: auto; padding: clamp(56px, 12vw, 128px) 24px; border-top: 5px solid var(--ink); }
+h1 { max-width: 800px; margin: 0; font: 700 clamp(44px, 9vw, 80px)/.95 Georgia, serif; letter-spacing: -.04em; }
+.lede { max-width: 600px; font: 22px/1.4 Georgia, serif; }
+.eyebrow { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.eyebrow::before { width: 28px; border-top: 3px solid var(--red); content: ''; }
+.button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 11px 18px; border: 2px solid var(--ink); background: var(--ink); color: var(--sheet); text-decoration: none; box-shadow: 3px 3px 0 var(--red); }
+.site-footer { border-width: 2px 0 0; }
+.footer-inner { align-items: center; font-size: 13px; }
+@media (max-width: 700px) { .masthead, .footer-inner { grid-template-columns: 1fr; padding-inline: 16px; } .site-nav { gap: 12px; } .page { padding-inline: 16px; } }

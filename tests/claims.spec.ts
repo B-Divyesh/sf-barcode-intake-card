@@ -9,7 +9,7 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v6.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v7.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -28,9 +28,9 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
   await page.reload();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v6'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v7'))).toBe(true);
   await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v4'))).toBe(false);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v6.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v7.js')))).toBe(true);
 });
 
 test('@claim:local-only keeps cards, chosen CSV rows, and photos in this browser without an account or sync', async ({ page }) => {
@@ -109,18 +109,31 @@ test('@claim:csv-export exports one row per demo card', async ({ page }) => {
   expect(lines).toHaveLength(4);
 });
 
-test('@claim:search-cards filters saved cards by location', async ({ page }) => {
+test('@claim:search-cards filters saved cards by barcode, item, supplier, and location', async ({ page }) => {
   await page.goto('/demo');
-  await page.getByLabel('Search cards').fill('Drawer C-03');
-  await expect(page.getByText('USB-C panel cable, 30 cm')).toBeVisible();
-  await expect(page.getByText('608ZZ shielded bearing')).toBeHidden();
+  const search = page.getByLabel('Search cards');
+  const cases = [
+    ['5901234123457', '608ZZ shielded bearing'],
+    ['USB-C panel cable', 'USB-C panel cable, 30 cm'],
+    ['Pack & Post Trade', 'Thermal labels, 50 × 30 mm'],
+    ['Drawer C-03', 'USB-C panel cable, 30 cm']
+  ];
+  for (const [query, name] of cases) {
+    await search.fill(query);
+    await expect(page.getByRole('heading', { name, level: 2 })).toBeVisible();
+    await expect(page.locator('.record:not([hidden])')).toHaveCount(1);
+  }
 });
 
-test('@claim:json-backup restores exported cards', async ({ page }) => {
+test('@claim:json-backup exports and restores every saved field including the photo', async ({ page }) => {
   await page.goto('/intake');
   await page.getByLabel('Barcode or SKU').fill('BACKUP-1');
   await page.getByLabel('Item name').fill('Backup test washer');
+  await page.getByLabel('Supplier').fill('Full Field Supply');
   await page.getByLabel('Location note').fill('Tray 4');
+  await page.getByLabel('Quantity').fill('7');
+  await page.getByLabel('Review notes').fill('Every saved field must return.');
+  await page.getByLabel('Item photo').setInputFiles({ name: 'backup.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64') });
   await page.getByRole('button', { name: 'Save item card' }).click();
   await page.goto('/records');
   const downloadPromise = page.waitForEvent('download');
@@ -129,11 +142,25 @@ test('@claim:json-backup restores exported cards', async ({ page }) => {
   const stream = await download.createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(chunk as Buffer);
+  const backup = JSON.parse(Buffer.concat(chunks).toString());
+  expect(backup.items).toHaveLength(1);
+  const expected = backup.items[0];
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByRole('heading', { name: 'No item cards yet' })).toBeVisible();
   await page.getByLabel('Import backup').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.concat(chunks) });
   await expect(page.getByText('Backup test washer')).toBeVisible();
+  const restored = await page.evaluate(async (id) => new Promise((resolve, reject) => {
+    const request = indexedDB.open('barcode-intake-real', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const read = db.transaction('items').objectStore('items').get(id);
+      read.onsuccess = () => { db.close(); resolve(read.result); };
+      read.onerror = () => reject(read.error);
+    };
+  }), expected.id);
+  expect(restored).toEqual(expected);
 });
 
 test('@regression:backup-validation rejects bad shape, version, and types without changing stored cards', async ({ page }) => {
@@ -343,22 +370,34 @@ test('@claim:demo-edit searches, edits, and prints a sample card', async ({ page
   await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
 });
 
-test('@regression:demo-exit discards edits before the demo is reopened', async ({ page }) => {
-  const editedNote = 'Verifier edit that should be discarded when demo ends';
-  await page.goto('/demo');
+test('@claim:demo-reset-exit restores samples and discards demo changes before real use', async ({ page }) => {
+  const resetNote = 'Verifier edit that Reset demo must discard';
+  const exitNote = 'Verifier edit that Start for real must discard';
+  await page.goto('/?demo=1');
+  await expect(page.getByRole('heading', { name: 'Review sample intake cards' })).toBeVisible();
+  await expect(page.getByLabel('Demo status')).toContainText('nothing is saved to your real cards');
   await page.getByRole('link', { name: 'Edit card' }).first().click();
-  await page.getByLabel('Review notes').fill(editedNote);
+  await page.getByLabel('Review notes').fill(resetNote);
   await page.getByRole('button', { name: 'Save card changes' }).click();
-  await expect(page.getByText(editedNote)).toBeVisible();
-  await page.getByRole('link', { name: 'Start for real' }).click();
-  await expect(page).toHaveURL(/\/intake$/);
-  await page.goto('/demo');
+  await expect(page.getByText(resetNote)).toBeVisible();
+  await page.getByRole('button', { name: 'Reset demo' }).click();
+  await expect(page.getByText('608ZZ shielded bearing')).toBeVisible();
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByLabel('Review notes')).toHaveValue('Check bore before restocking.');
-  await expect(page.getByLabel('Review notes')).not.toHaveValue(editedNote);
+  await page.getByLabel('Review notes').fill(exitNote);
+  await page.getByRole('button', { name: 'Save card changes' }).click();
+  await expect(page.getByText(exitNote)).toBeVisible();
+  await page.getByRole('link', { name: 'Start for real' }).click();
+  await expect(page).toHaveURL(/\/intake$/);
+  await page.goto('/records');
+  await expect(page.getByRole('heading', { name: 'No item cards yet' })).toBeVisible();
+  await page.goto('/?demo=1');
+  await page.getByRole('link', { name: 'Edit card' }).first().click();
+  await expect(page.getByLabel('Review notes')).toHaveValue('Check bore before restocking.');
+  await expect(page.getByLabel('Review notes')).not.toHaveValue(exitNote);
 });
 
-test('@claim:camera-ready opens the included device camera only after a scan action', async ({ page, context }) => {
+test('@claim:camera-ready opens camera preview only after the scan action', async ({ page, context }) => {
   await context.grantPermissions(['camera'], { origin: baseOrigin });
   const outside: string[] = [];
   page.on('request', (request) => {
@@ -373,10 +412,10 @@ test('@claim:camera-ready opens the included device camera only after a scan act
   expect(outside).toEqual([]);
 });
 
-test('@regression:checkout-dead-link keeps camera scanning usable without the unavailable billing SKU', async ({ page }) => {
+test('@regression:camera-preview needs no billing SKU', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('a[href*="api.sociobot.in"]')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('$19');
-  await page.getByRole('link', { name: 'Open the intake desk' }).click();
+  await page.getByRole('link', { name: 'Record an item' }).click();
   await expect(page.getByRole('button', { name: 'Scan with camera' })).toBeEnabled();
 });
