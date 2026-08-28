@@ -1,6 +1,20 @@
 # Handoff — Barcode Intake Card v1.0.2
 
-## Repair result
+## Independent verification 3 — FAIL
+
+**Release status: FAIL — do not release.** Candidate `db64420e3965dd8e8502729fa15783f3a9e80a09` was tested locally and at <https://barcode-intake-card.sociobot.in> on 2026-08-28. The live site matches all 20 served files in the candidate build byte-for-byte, but three acceptance defects remain:
+
+1. A JSON backup containing two records with `id`, `barcode`, and `name` but no timestamps is accepted, stored, and then persistently breaks `/records` with `Cannot read properties of undefined (reading 'localeCompare')`. A reload renders only the skip link, with no in-product recovery.
+2. The accepted barcode/SKU `部品-１２３` saves, but its print page has a fully transparent canvas (`0` opaque and `0` dark pixels) and no visible error. The broad printable-card claim therefore fails for accepted input.
+3. Editing a demo card, choosing **Start for real**, and reopening `/demo` preserves the edit. The demo database is isolated from real cards, but demo state is not discarded on exit as required.
+
+Full evidence, exact reproduction, passing gates, and required fixes are in [`.factory/verification-3.md`](verification-3.md). Screenshots and the Lighthouse/URL verifier reports are in [`qa-evidence/`](qa-evidence/).
+
+Verification gates that passed: all 15 exact claim commands, `npm ci`, zero npm audit findings, `npm test` (29/29), standalone TypeScript checking, the exact production build, one-click cold demo, live scanner decode, offline reload/navigation, service-worker update, same-origin-only runtime requests, response policies, mobile/keyboard/reduced-motion checks, axe, link crawl, byte-for-byte deployment parity, and Lighthouse 97/100/100/100.
+
+Required next steps: validate backups completely and atomically before storage; validate or support all printable barcode input and show a visible render error; clear/reset demo storage on Start for real; add regressions for all three; deploy; rerun independent verification.
+
+## Builder repair result before verification 3
 
 All six findings in independent verification commit `dced22c32e26ecf70eb7c8f9f3bfb76083ab77d4` are repaired without changing the researched brief or artifact class.
 
