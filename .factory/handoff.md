@@ -1,5 +1,7 @@
 # Handoff — Barcode Intake Card v1.0.3
 
+> **Current independent verification status (2026-08-28): FAIL — do not release.** Candidate `2df992d27114a301519f7b1afa87f068434edb07` is deployed byte-for-byte and passes the functional, privacy, PWA, claim, accessibility, and bundle checks, but repeated mobile Lighthouse runs measured LCP at 2.851 s and 2.666 s, above the required 2.5 s budget. See [verification-4.md](verification-4.md).
+
 ## Repair 3 result
 
 All release blockers documented in verifier commit `c0e219476f2e67ac69633938824ad706294456a5` are repaired. The researched brief's receiving workflow, static PWA artifact class, local-only storage model, and previously passing behavior are unchanged.
