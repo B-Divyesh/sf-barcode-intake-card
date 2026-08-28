@@ -26,7 +26,17 @@ The initial document now preloads the mobile hero at high priority. The responsi
 
 ### Repair 4 deployment and live identity
 
-Pending deployment and live verification.
+Commit `19c63e8f6c7f3d422789a8d94acab32a12886722` was pushed to `origin/main` and deployed with `/opt/fleet/lib/deploy-static.sh barcode-intake-card dist`. Azure Static Web Apps reports the production environment `Ready`, with build `default` updated at `2026-08-28T19:06:22.309438+00:00`. The production URL is <https://barcode-intake-card.sociobot.in>.
+
+- All 20 served files match the clean local `dist/` build byte-for-byte. The live shell identifies `app-v6.js`, `app-v6.css`, `barcode-intake-v6`, and visible build `v1.0.4`.
+- `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, `/license`, and `/print/demo-bearing?demo=1` return 200. `/does-not-exist` returns the designed recovery page with HTTP 404.
+- The complete live claim and functional suite passed 20 of 20. It covers offline reload, service-worker update and cache cleanup, IndexedDB persistence, same-origin-only privacy, CSV/photo intake, backup recovery, barcode printing, demo isolation, camera startup, and the absent billing path. The same harness now accepts `PLAYWRIGHT_BASE_URL`, so these checks run unchanged against local preview or production.
+- The live browser/accessibility suite passed 13 of 13. It found no serious or critical axe findings or console errors across all app routes. It also passed keyboard skip-link focus, 390 px overflow and 44 px touch targets, reduced failure recovery, camera cleanup, live 404 behavior, and the exact early-discovery/mobile-image LCP regression.
+- Factory `verify-url.sh` passed live in 762 ms with the expected title, `lang=en`, one `h1`, one `main`, zero missing image alternatives, zero unnamed buttons, and zero console errors. Evidence: [`qa-artifacts/repair-4-live-verify/verify.json`](qa-artifacts/repair-4-live-verify/verify.json).
+- Three consecutive fresh Lighthouse 13.4.1 mobile runs using DevTools throttling passed the 2.5 s budget at **1.594 s**, **1.640 s**, and **1.623 s** LCP. Each scored 99 performance, 100 accessibility, 100 best practices, and 100 SEO, with CLS 0 and TBT 0 ms. Evidence: [`run 1`](qa-artifacts/lighthouse-repair-4-live-2.json), [`run 2`](qa-artifacts/lighthouse-repair-4-live-3.json), and [`run 3`](qa-artifacts/lighthouse-repair-4-live-4.json). An earlier cold collection recorded a transient 1.407 s document TTFB and 2.928 s LCP; image discovery still passed, and the following three runs passed consecutively.
+- The live worker activated `barcode-intake-v6`, cached the v6 shell, completed `registration.update()`, and hard-reloaded demo intake while offline. Evidence: [`offline mobile`](qa-artifacts/repair-4-live-offline-mobile.png).
+- The live CSP remains same-origin only and responses include HSTS, `nosniff`, strict-origin referrer policy, and camera-only permissions policy. Hashed JS/CSS assets are immutable; HTML, manifest, and worker revalidate. Evidence: [`headers`](qa-artifacts/repair-4-live-headers.txt).
+- Package/consumer, backend rate-limit, sign-in, paid unlock, and live AI checks do not apply to this static, account-free PWA.
 
 ## Repair 3 result
 

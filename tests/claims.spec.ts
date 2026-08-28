@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { BarcodeFormat, BinaryBitmap, DecodeHintType, HybridBinarizer, MultiFormatReader, RGBLuminanceSource } from '@zxing/library';
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
+const baseOrigin = new URL(baseURL).origin;
+
 test('@claim:offline-reload works offline after the first visit', async ({ page, context }) => {
-  await page.goto('http://127.0.0.1:4173/demo');
+  await page.goto('/demo');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
@@ -33,7 +36,7 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
 test('@claim:local-only keeps cards, chosen CSV rows, and photos in this browser without an account or sync', async ({ page }) => {
   const outside: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outside.push(request.url());
+    if (new URL(request.url()).origin !== baseOrigin) outside.push(request.url());
   });
   await page.goto('/intake');
   await page.getByLabel('Choose CSV').setInputFiles({ name: 'supplier.csv', mimeType: 'text/csv', buffer: Buffer.from('barcode,name,supplier,location,quantity\nLOCAL-1,Local test item,Private Supply,Bench 5,3') });
@@ -356,10 +359,10 @@ test('@regression:demo-exit discards edits before the demo is reopened', async (
 });
 
 test('@claim:camera-ready opens the included device camera only after a scan action', async ({ page, context }) => {
-  await context.grantPermissions(['camera'], { origin: 'http://127.0.0.1:4173' });
+  await context.grantPermissions(['camera'], { origin: baseOrigin });
   const outside: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outside.push(request.url());
+    if (new URL(request.url()).origin !== baseOrigin) outside.push(request.url());
   });
   await page.goto('/intake');
   await expect(page.getByRole('dialog')).toHaveCount(0);
