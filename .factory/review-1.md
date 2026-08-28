@@ -1,8 +1,11 @@
 # Adversarial first-read review 1 — Barcode Intake Card
 
-**Verdict: FAIL**  
-**Reviewed:** 28 August 2026  
-**Live site:** <https://barcode-intake-card.sociobot.in>  
+**Verdict: FAIL**
+
+**Reviewed:** 28 August 2026
+
+**Live site:** <https://barcode-intake-card.sociobot.in>
+
 **Repository base:** `7d064b5937f8d56037a03157e9242b14dfc17427`
 
 The first screen and isolated demo pass their core tests. The release still fails because a previously repaired 44 px touch-target defect is reproducible on production. There are also unlisted or overbroad claims, incomplete 404 structure, and copy that violates the supplied plain-words rules. A PASS requires zero findings.
