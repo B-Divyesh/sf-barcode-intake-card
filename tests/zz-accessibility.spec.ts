@@ -24,6 +24,30 @@ test('mobile intake fits at 390 pixels and supports keyboard entry', async ({ pa
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
+test('@regression:mobile-lcp hero is discovered before JavaScript and uses the mobile asset at its intrinsic ratio', async ({ page }) => {
+  await page.setViewportSize({ width: 412, height: 823 });
+  let mobileHeroRequested = false;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
+  });
+  await page.route('**/assets/app-v6.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
+    await route.continue();
+  });
+
+  await page.goto('/');
+  const hero = page.locator('.hero-figure img');
+  await expect(hero).toBeVisible();
+  const metrics = await hero.evaluate((image: HTMLImageElement) => {
+    const rect = image.getBoundingClientRect();
+    return { source: new URL(image.currentSrc).pathname, width: rect.width, height: rect.height };
+  });
+  expect(metrics.source).toBe('/assets/receiving-desk-600.webp');
+  expect(metrics.width / metrics.height).toBeCloseTo(1.5, 1);
+  expect(metrics.height).toBeLessThan(300);
+});
+
 test('camera tracks end after Escape and route teardown', async ({ page }) => {
   await page.goto('/intake');
   await page.getByRole('button', { name: 'Scan with camera' }).click();

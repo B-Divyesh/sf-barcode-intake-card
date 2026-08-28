@@ -1,6 +1,32 @@
-# Handoff — Barcode Intake Card v1.0.3
+# Handoff — Barcode Intake Card v1.0.4
 
-> **Current independent verification status (2026-08-28): FAIL — do not release.** Candidate `2df992d27114a301519f7b1afa87f068434edb07` is deployed byte-for-byte and passes the functional, privacy, PWA, claim, accessibility, and bundle checks, but repeated mobile Lighthouse runs measured LCP at 2.851 s and 2.666 s, above the required 2.5 s budget. See [verification-4.md](verification-4.md).
+## Repair 4 result
+
+The release-blocking mobile LCP defect in verifier commit `daab4678d3bae5d8f6c57138979301d6b00b467b` is repaired. The researched brief, local-only receiving workflow, static PWA class, visual thesis, and every previously passing behavior remain unchanged.
+
+The defect was reproduced against deployed candidate `2df992d27114a301519f7b1afa87f068434edb07` with Lighthouse 13.4.1 using mobile DevTools throttling: LCP was 2.709 s. Its trace showed that JavaScript inserted the LCP image after initial HTML parsing, delaying discovery by 1.152 s; the 412 px mobile viewport selected the 134 KB desktop asset; and the image rendered at 362 × 600 because its HTML height remained active. Evidence: [`qa-artifacts/lighthouse-repair-4-before.json`](qa-artifacts/lighthouse-repair-4-before.json).
+
+The initial document now preloads the mobile hero at high priority. The responsive picture selects the 48 KB 600 px asset at up to 760 px, and explicit `height: auto` restores the intended 3:2 ratio. The immutable app bundle, PWA cache, install URL, package version, and visible build number advance to v6/v1.0.4 so installed clients receive the repair.
+
+### Exact regression coverage
+
+`@regression:mobile-lcp` blocks the app module for 750 ms and proves that the initial document requests the mobile hero before JavaScript can render the landing page. It then asserts that a 412 × 823 viewport selects `/assets/receiving-desk-600.webp`, preserves the 3:2 ratio, and keeps the rendered image below 300 px high. Existing PWA tests now prove v6 activation, stale-cache deletion, v6 shell precaching, and offline navigation.
+
+### Local release verification — 2026-08-28
+
+- Clean `npm ci`: passed with 29 packages; `npm audit` and `npm audit --omit=dev` report zero vulnerabilities.
+- Every command in `.factory/claims.json`: passed independently, 15 of 15.
+- `npm test`: 33 of 33 Playwright tests passed. Coverage includes all claims, exact LCP regression, desktop/mobile routes, keyboard, camera cleanup, 44 px targets, axe, CSP/console, privacy, offline/update, barcode decoding, backup recovery, demo isolation, and HTTP 404 behavior.
+- `npx tsc --noEmit`: passed. The repository has no separate lint script. `npm run build` passed and produced `dist/index.html` at the root.
+- Initial app JavaScript is 33.04 KB raw / 11.26 KB gzip and CSS is 11.88 KB raw / 3.58 KB gzip. Deferred barcode and scanner chunks remain 14.72 KB and 108.68 KB gzip.
+- Two Lighthouse 13.4.1 mobile runs with the verifier's DevTools throttling passed the 2.5 s LCP budget: **1.806 s** and **1.572 s**. Both scored 99 performance, 100 accessibility, 100 best practices, and 100 SEO, with CLS 0 and TBT 0 ms. Both report the LCP resource as discoverable in the initial document and measure it at 362 × 241. Evidence: [`run 1`](qa-artifacts/lighthouse-repair-4-local-1.json) and [`run 2`](qa-artifacts/lighthouse-repair-4-local-2.json).
+- Factory `verify-url.sh` passed locally in 558 ms with the expected title, `lang=en`, one `h1`, one `main`, zero missing image alternatives, zero unnamed buttons, and zero console errors. Evidence: [`qa-artifacts/repair-4-local-verify/verify.json`](qa-artifacts/repair-4-local-verify/verify.json).
+- Desktop and 390 × 844 browser checks had no console/page errors or horizontal overflow. Mobile selected the 600 px hero and rendered it at 340 × 227. Evidence: [`desktop`](qa-artifacts/repair-4-local-desktop.png) and [`mobile`](qa-artifacts/repair-4-local-mobile.png).
+- Local route, 404, same-origin CSP, `nosniff`, and referrer-policy checks passed. Package/consumer, backend rate-limit, sign-in, billing, and live AI checks do not apply to this static, account-free PWA.
+
+### Repair 4 deployment and live identity
+
+Pending deployment and live verification.
 
 ## Repair 3 result
 

@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.3';
+const BUILD = 'v1.0.4';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
@@ -66,7 +66,7 @@ function landing(): string {
           <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Camera scanning is included</li></ul>
         </div>
         <figure class="hero-figure">
-          <picture><source srcset="/assets/receiving-desk-600.webp 600w, /assets/receiving-desk.webp 900w" sizes="(max-width: 760px) calc(100vw - 48px), 42vw" type="image/webp"><img src="/assets/receiving-desk.webp" width="900" height="600" alt="An engraved workshop desk with parts, a parcel, a scanner, and a blank intake card." fetchpriority="high" decoding="async"></picture>
+          <picture><source media="(max-width: 760px)" srcset="/assets/receiving-desk-600.webp" type="image/webp"><source srcset="/assets/receiving-desk.webp" type="image/webp"><img src="/assets/receiving-desk.webp" width="900" height="600" alt="An engraved workshop desk with parts, a parcel, a scanner, and a blank intake card." fetchpriority="high" decoding="async"></picture>
           <figcaption>Fig. 01 — Receive the odd parts first. Choose a stock system later.</figcaption>
         </figure>
       </div>
