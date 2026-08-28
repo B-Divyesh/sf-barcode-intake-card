@@ -14,6 +14,7 @@ Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/?demo=1>. It ope
 
 - Records a barcode, item name, supplier, location, quantity, notes, and a reduced photo.
 - Opens a camera preview only after you choose Scan with camera.
+- Fills the barcode field when the camera reader decodes a barcode.
 - Matches a barcode against a supplier CSV you choose.
 - Warns about saved cards with the same barcode.
 - Searches saved cards and prints one item card per page with a Code 128 barcode. Printable codes use English letters, numbers, spaces, and punctuation.
@@ -50,9 +51,9 @@ Real cards use IndexedDB database `barcode-intake-real`. Demo cards use `barcode
 
 The service worker caches the app shell. Export a JSON backup before clearing site data or moving devices. See `/privacy` and `/terms` in the app.
 
-## Camera preview
+## Camera scanning
 
-Camera preview, manual intake, and all exports are included. Choose **Scan with camera** from the intake form to request camera access. You can always type a barcode instead.
+Camera scanning, manual intake, and all exports are included. Choose **Scan with camera** to open the preview. A decoded barcode fills the barcode field. You can always type it instead.
 
 ## Deployment
 

@@ -1,6 +1,6 @@
 # Demo sandbox
 
-- URL: `https://barcode-intake-card.sociobot.in/demo` (local: `http://localhost:5173/demo`). `?demo=1` keeps demo mode on app routes.
+- URL: `https://barcode-intake-card.sociobot.in/?demo=1` (local: `http://localhost:5173/?demo=1`). `/demo` is an equivalent entry, and `?demo=1` keeps demo mode on app routes.
 - Sample data: three workshop items — a shielded bearing, a panel cable, and thermal label rolls — with realistic barcodes, suppliers, quantities, notes, and locations.
 - Reset: choose **Reset demo** in the persistent banner. This clears and reseeds only the demo database.
 - Leave: choose **Start for real**. Demo data is cleared and is not copied. Opening the demo again restores the original samples.

@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.5';
+const BUILD = 'v1.0.6';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
@@ -64,10 +64,10 @@ function landing(): string {
       <div class="hero-grid">
         <div>
           <p class="eyebrow">For mixed-stock intake</p>
-          <h1 tabindex="-1">Turn scans into item cards</h1>
+          <h1 tabindex="-1">Turn scanned barcodes into item cards</h1>
           <p class="lede">For small sellers and workshops receiving mixed stock without a full inventory system.</p>
-          <div class="hero-actions"><a class="button" href="/demo" data-link>Try it with sample data <span aria-hidden="true">→</span></a><p class="action-note">It opens sample workshop cards you can search, edit, and print.</p></div>
-          <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Camera preview opens when you choose it</li></ul>
+          <div class="hero-actions"><a class="button" href="/?demo=1" data-link>Try it with sample data <span aria-hidden="true">→</span></a><p class="action-note">It opens sample workshop cards you can search, edit, and print.</p></div>
+          <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Camera scanning fills the barcode field</li></ul>
         </div>
         <figure class="hero-figure">
           <picture><source media="(max-width: 760px)" srcset="/assets/receiving-desk-600.webp" type="image/webp"><source srcset="/assets/receiving-desk.webp" type="image/webp"><img src="/assets/receiving-desk.webp" width="900" height="600" alt="An engraved workshop desk with parts, a parcel, a scanner, and a blank intake card." fetchpriority="high" decoding="async"></picture>
@@ -81,7 +81,7 @@ function landing(): string {
           <div class="preview-meta"><div><small>Location</small><strong>Bin A-14</strong></div><div><small>Quantity</small><strong>12</strong></div><div><small>Status</small><strong>Ready to review</strong></div><div><small>Privacy</small><strong>Stored locally</strong></div></div>
         </div>
       </section>
-      <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Use a scanner, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Scan or type a code made from English letters, numbers, spaces, and punctuation.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or export the card</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>
+      <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Scan a barcode, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Camera scanning fills the barcode field. You can also type English letters, numbers, spaces, and punctuation.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or export the card</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>
       <section class="section" aria-labelledby="bounds-title"><div class="section-heading"><h2 id="bounds-title">What this tool does not do</h2></div><div class="limits"><p><strong>No automatic web lookup.</strong><br>Supplier and stock details do not leave your device.</p><p><strong>No purchase orders.</strong><br>This records arrivals. It does not run procurement.</p><p><strong>No account or sync.</strong><br>Export a file when you need a backup or another system.</p><p><strong>CSV lookups are explicit.</strong><br>You choose the supplier file. It is read in this browser.</p></div></section>
       <section class="section" aria-labelledby="camera-title"><div class="price-strip"><div><p class="eyebrow">Camera reader</p><h2 id="camera-title">Camera preview is included</h2><p>Manual intake and exports are included on this device.</p></div><div><a class="button" href="/intake" data-link>Record an item</a></div></div><p>The camera starts only after you choose <strong>Scan with camera</strong>.</p></section>
     </article>
@@ -159,7 +159,7 @@ function licensePage(): string {
 
 function notFound(): string {
   setMeta('Page not found — Barcode Intake Card', 'Return to Barcode Intake Card.', '/404');
-  return shell(`<main id="main"><div class="page not-found"><p class="eyebrow">Page not found · 404</p><h1 tabindex="-1">This card is not in the file</h1><p class="lede">The address may be wrong, or the card may have moved.</p><a class="button" href="/intake" data-link>Return to the intake form</a></div></main>`);
+  return shell(`<main id="main"><div class="page not-found"><p class="eyebrow">Error 404</p><h1 tabindex="-1">Page not found</h1><p class="lede">The address may be wrong, or the page may have moved.</p><a class="button" href="/intake" data-link>Return to the intake form</a></div></main>`);
 }
 
 async function render(moveFocus = false): Promise<void> {

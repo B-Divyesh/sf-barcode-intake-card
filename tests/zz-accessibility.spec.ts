@@ -30,7 +30,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v7.js', async (route) => {
+  await page.route('**/assets/app-v8.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();
@@ -106,7 +106,7 @@ test('visible controls meet the 44 pixel touch target at 390 pixels', async ({ p
 test('unknown documents return HTTP 404 with the designed recovery page', async ({ page }) => {
   const response = await page.goto('/does-not-exist');
   expect(response?.status()).toBe(404);
-  await expect(page.getByRole('heading', { name: 'This card is not in the file' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Page not found', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Return to the intake form' })).toBeVisible();
   await expect(page.locator('header, footer')).toHaveCount(2);
   await expect(page.locator('meta[name="description"], link[rel="canonical"], meta[property="og:title"], meta[name="twitter:title"]')).toHaveCount(4);
