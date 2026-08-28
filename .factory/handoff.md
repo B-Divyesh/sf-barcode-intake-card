@@ -26,7 +26,7 @@ The initial document now preloads the mobile hero at high priority. The responsi
 
 ### Repair 4 deployment and live identity
 
-Commit `19c63e8f6c7f3d422789a8d94acab32a12886722` was pushed to `origin/main` and deployed with `/opt/fleet/lib/deploy-static.sh barcode-intake-card dist`. Azure Static Web Apps reports the production environment `Ready`, with build `default` updated at `2026-08-28T19:06:22.309438+00:00`. The production URL is <https://barcode-intake-card.sociobot.in>.
+Commit `19c63e8f6c7f3d422789a8d94acab32a12886722` was pushed to `origin/main` and deployed with `/opt/fleet/lib/deploy-static.sh barcode-intake-card dist`. After committing the live evidence, the clean build was republished as deployment `8a838687-1772-4a92-8519-3dab21b2d2eb`. Azure Static Web Apps reports the production environment `Ready`, updated at `2026-08-28T19:24:24.478723+00:00`. The production URL is <https://barcode-intake-card.sociobot.in>.
 
 - All 20 served files match the clean local `dist/` build byte-for-byte. The live shell identifies `app-v6.js`, `app-v6.css`, `barcode-intake-v6`, and visible build `v1.0.4`.
 - `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, `/license`, and `/print/demo-bearing?demo=1` return 200. `/does-not-exist` returns the designed recovery page with HTTP 404.
