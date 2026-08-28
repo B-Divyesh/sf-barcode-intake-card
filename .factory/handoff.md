@@ -1,29 +1,41 @@
-# Handoff — adversarial review 3
+# Handoff — polish 3 complete
 
 ## Outcome
 
-Review only; no product code was changed. `.factory/review-3.md` records a **FAIL** with four findings: a misleading `/license` route (blocking), missing/ambiguous price copy, an incomplete demo search hint, and an unlabeled external footer destination.
+Released the cumulative repair for Barcode Intake Card at
+<https://barcode-intake-card.sociobot.in>.
+
+- `f0244ec840bdaa4e91279a8234be3d5be72ca2a1` removes the misleading license page, adds the tested no-checkout claim, fixes supplier search guidance, labels the external footer link, and bumps the PWA cache.
+- `87722545784a6066a50a35809372475fce71a7ad` gives the longer demo search hint a full mobile row, so all four fields remain visible at 390 px, and bumps the cache again.
+- `/license` now returns `301 Location: /intake`; it is absent from the sitemap and no longer renders camera instructions.
+- The first screen now plainly says the shipped tool is free to use with no account or checkout. This is an intentional deviation from the brief’s earlier `one-time` monetization note: the deployed product has no billing flow or stated price, so adding a fictional paid tier would be misleading. The complete currently shipped tool is free and that observable promise is registered as `free-no-checkout`.
 
 ## Verification
 
-- Reviewed base: `60fbb7e654720f08fd8f83c5dc4d5a647ba6a031`.
-- Fresh clone: `/tmp/barcode-review3-clean-DiCDYt`.
-- Every exact command in `.factory/claims.json`: **17/17 passed individually**.
-- Fresh-clone `npm test`: **34/34 passed**; its build produced `dist/`.
-- Production Playwright suite: **34/34 passed**.
-- Live URL verifier: 200, no console errors, one `h1`, one `main`, `lang=en`, no missing alt text, and no unnamed button.
-- Manual live demo: sample data visible in one click; Reset restored the original sample; Start for real left both real and demo stores empty; no cross-origin request occurred.
-- Route/link crawl: all discovered links returned 200 or were explicit `mailto:` links; unknown route returned a designed HTTP 404. The semantic `/license` mismatch remains a finding.
-- Evidence: `.factory/qa-evidence/review-3/`.
+Final clean clone: `/tmp/barcode-intake-card-polish3-final-clean` at `8772254`.
 
-## Re-run
+- `npm ci` passed; audit reported zero vulnerabilities.
+- Every exact command in `.factory/claims.json` was executed individually: **18/18 passed**.
+- `npm test` from the final clean clone passed **36/36** and produced `dist/`.
+- Final production run, `PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npx playwright test`, passed **36/36**.
+- `/opt/fleet/lib/verify-url.sh https://barcode-intake-card.sociobot.in .factory/qa-evidence/polish-3-live` passed: HTTP 200, no console errors, title, `lang=en`, one `h1`, one `main`, alt text, and labelled buttons.
+- Live axe coverage passed on `/`, `/demo`, `/intake`, `/records`, `/privacy`, and `/terms`; there were no serious or critical findings.
+- Live mobile checks passed for 44 px targets, keyboard skip link, reduced motion, offline reload, demo reset/exit, and the designed HTTP 404.
+- Two live Lighthouse 13.4.1 mobile runs scored **100 / 100 / 100 / 100** (Performance / Accessibility / Best Practices / SEO). LCP was 1.210 s then 1.099 s; CLS was 0 in both runs.
+- Final built initial application JavaScript is 32.66 KB raw / 11.05 KB gzip; CSS is 11.71 KB raw / 3.57 KB gzip. Deferred scanner and barcode chunks are 108.68 KB and 14.72 KB gzip.
+
+Live evidence is committed under `.factory/qa-evidence/polish-3-live/`, including desktop/mobile landing captures, the isolated demo, the 404, verifier output, and both Lighthouse reports. `.factory/polish-3.md` maps every cumulative finding to its evidence.
+
+## Run and deploy
 
 ```bash
 npm ci
 npm test
-PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npx playwright test
+npm run build
 ```
 
-## Remaining work
+Deploy `dist/` as the configured static site. The final deployment was checked cold at the production URL; `?demo=1` opens isolated sample data with Reset demo and Start for real.
 
-Resolve F-3-1 through F-3-4 in `.factory/review-3.md`, deploy, and repeat the full clean-clone and live review. Do not claim completion until all four findings are absent on production.
+## Known gaps and next steps
+
+None. The local-first PWA intentionally has no account, sync, AI service, or billing flow.
