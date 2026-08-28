@@ -6,8 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const PRODUCT = 'barcode-intake-card';
-const BUILD = 'v1.0.0';
+const BUILD = 'v1.0.1';
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
 let scannerStop: (() => void) | undefined;
@@ -62,7 +61,7 @@ function landing(): string {
           <h1 tabindex="-1">Turn scans into item cards</h1>
           <p class="lede">For small sellers and workshops receiving mixed stock without a full inventory system.</p>
           <div class="hero-actions"><a class="button" href="/demo" data-link>Try it with sample data <span aria-hidden="true">→</span></a><p class="action-note">It opens three ready-made cards you can search, edit, and print.</p></div>
-          <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Manual intake is free</li></ul>
+          <ul class="facts"><li>Cards stay in this browser</li><li>Works offline after the first visit</li><li>Camera scanning is included</li></ul>
         </div>
         <figure class="hero-figure">
           <picture><source srcset="/assets/receiving-desk-600.webp 600w, /assets/receiving-desk.webp 900w" sizes="(max-width: 760px) calc(100vw - 48px), 42vw" type="image/webp"><img src="/assets/receiving-desk.webp" width="900" height="600" alt="An engraved workshop desk with parts, a parcel, a scanner, and a blank intake card." fetchpriority="high" decoding="async"></picture>
@@ -78,7 +77,7 @@ function landing(): string {
       </section>
       <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Use a scanner, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Scan with your camera or enter any printed code.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or move on</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>
       <section class="section" aria-labelledby="bounds-title"><div class="section-heading"><h2 id="bounds-title">Your intake desk, not an ERP</h2><p>The tool stays small on purpose.</p></div><div class="limits"><p><strong>No automatic web lookup.</strong><br>Supplier and stock details do not leave your device.</p><p><strong>No purchase orders.</strong><br>This records arrivals. It does not run procurement.</p><p><strong>No account or sync.</strong><br>Export a file when you need a backup or another system.</p><p><strong>CSV lookups are explicit.</strong><br>You choose the supplier file. It is read in this browser.</p></div></section>
-      <section class="section" aria-labelledby="price-title"><div class="price-strip"><div><p class="eyebrow">Workshop license</p><h2 id="price-title">Add camera scanning</h2><p>Keep manual intake and all exports free. Pay once for camera scanning on this device.</p></div><div><div class="price">$19<small>One-time purchase</small></div><a class="button" href="https://api.sociobot.in/api/v1/products/${PRODUCT}/checkout">Buy camera scanning</a></div></div><p><a href="/license" data-link>Restore a license</a> · Sociobot is the merchant of record. Refunds are handled there.</p></section>
+      <section class="section" aria-labelledby="camera-title"><div class="price-strip"><div><p class="eyebrow">Camera reader</p><h2 id="camera-title">Scan without a checkout</h2><p>Camera scanning, manual intake, and exports are included on this device.</p></div><div><a class="button" href="/intake" data-link>Open the intake desk</a></div></div><p>The camera starts only after you choose <strong>Scan with camera</strong>.</p></section>
     </article>
   </main>`);
 }
@@ -89,43 +88,10 @@ async function demoPage(): Promise<string> {
   return recordsPage(true, true);
 }
 
-function paidStatus(): { unlocked: boolean; message: string } {
-  if (isDemo()) return { unlocked: true, message: 'Camera controls are available in the demo. Camera data is not saved.' };
-  const token = localStorage.getItem(`sb_license:${PRODUCT}`);
-  const valid = localStorage.getItem(`sb_license_valid:${PRODUCT}`) === 'true';
-  return { unlocked: Boolean(token && valid), message: token && !valid ? 'The saved license could not be verified.' : '' };
-}
-
-async function handleLicenseReturn(): Promise<void> {
-  const url = routeUrl();
-  const token = url.searchParams.get('license');
-  if (!token) return;
-  localStorage.setItem(`sb_license:${PRODUCT}`, token);
-  url.searchParams.delete('license');
-  history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-  await verifyLicense(token, true);
-}
-
-async function verifyLicense(token: string, force = false): Promise<boolean> {
-  const stampKey = `sb_license_checked:${PRODUCT}`;
-  const last = Number(localStorage.getItem(stampKey) ?? 0);
-  if (!force && Date.now() - last < 86_400_000) return localStorage.getItem(`sb_license_valid:${PRODUCT}`) === 'true';
-  try {
-    const response = await fetch(`https://api.sociobot.in/api/v1/products/${PRODUCT}/verify?license=${encodeURIComponent(token)}`);
-    const result = await response.json() as { valid?: boolean };
-    localStorage.setItem(`sb_license_valid:${PRODUCT}`, String(result.valid === true));
-    localStorage.setItem(stampKey, String(Date.now()));
-    return result.valid === true;
-  } catch {
-    return localStorage.getItem(`sb_license_valid:${PRODUCT}`) === 'true';
-  }
-}
-
 async function intakePage(): Promise<string> {
   const demo = isDemo();
   const editId = routeUrl().searchParams.get('edit');
   const existing = editId ? await getItem(demo, editId) : undefined;
-  const paid = paidStatus();
   setMeta(`${existing ? 'Edit card' : 'New intake'} — Barcode Intake Card`, 'Enter a barcode and record an item in this browser.', '/intake');
   return shell(`<main id="main"><div class="page">
     <div class="app-header"><div><p class="eyebrow">Receiving desk</p><h1 tabindex="-1">${existing ? 'Review this item card' : 'Record a new item'}</h1></div><a class="button button-secondary" href="/records${demoSuffix()}" data-link>View saved cards</a></div>
@@ -134,7 +100,7 @@ async function intakePage(): Promise<string> {
       <form id="intake-form" novalidate>
         <input type="hidden" name="id" value="${escapeHtml(existing?.id ?? '')}">
         <div class="field-grid">
-          <div class="field full"><label for="barcode">Barcode or SKU <span aria-hidden="true">*</span></label><div class="barcode-entry"><input id="barcode" name="barcode" inputmode="numeric" autocomplete="off" required value="${escapeHtml(existing?.barcode ?? '')}" aria-describedby="barcode-help"><button class="button button-secondary" type="button" data-action="scan" ${paid.unlocked ? '' : 'aria-describedby="camera-locked"'}>Scan with camera</button></div><small id="barcode-help">Use any letters or numbers printed on the item.</small>${!paid.unlocked ? '<small id="camera-locked"><a href="/license" data-link>Buy or restore a license</a> to use the camera.</small>' : ''}</div>
+          <div class="field full"><label for="barcode">Barcode or SKU <span aria-hidden="true">*</span></label><div class="barcode-entry"><input id="barcode" name="barcode" inputmode="numeric" autocomplete="off" required value="${escapeHtml(existing?.barcode ?? '')}" aria-describedby="barcode-help"><button class="button button-secondary" type="button" data-action="scan">Scan with camera</button></div><small id="barcode-help">Use any letters or numbers printed on the item.</small></div>
           <div class="field full" id="duplicates" aria-live="polite"></div>
           <div class="field"><label for="name">Item name <span aria-hidden="true">*</span></label><input id="name" name="name" required value="${escapeHtml(existing?.name ?? '')}"></div>
           <div class="field"><label for="supplier">Supplier</label><input id="supplier" name="supplier" value="${escapeHtml(existing?.supplier ?? '')}"></div>
@@ -172,18 +138,17 @@ async function printPage(id: string): Promise<string> {
 
 function privacyPage(): string {
   setMeta('Privacy — Barcode Intake Card', 'How Barcode Intake Card stores item details and photos.', '/privacy');
-  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Policy · 28 August 2026</p><h1 tabindex="-1">Your cards stay on your device</h1><p class="lede">Barcode Intake Card stores item records, photos, and license details in your browser.</p><h2>Data storage</h2><p>Item cards use IndexedDB on this device. License tokens use local storage. Demo cards use a separate database and never read your real cards.</p><h2>Network requests</h2><p>The app does not send item data, barcodes, CSV rows, or photos to us. The service worker fetches app files from this site. License purchase and verification contact the Sociobot billing API only after you buy or restore a license.</p><h2>Camera and files</h2><p>The camera starts only when you press “Scan with camera.” CSV and photo files are read on this device. You can deny camera access and type the code instead.</p><h2>Delete or export data</h2><p>Delete individual cards from the Cards page. Export CSV or a JSON backup before clearing this site’s browser data.</p><h2>Contact</h2><p>Questions can be sent to <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a>.</p></article></main>`, 'privacy');
+  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Policy · 28 August 2026</p><h1 tabindex="-1">Your cards stay on your device</h1><p class="lede">Barcode Intake Card stores item records and photos in your browser.</p><h2>Data storage</h2><p>Item cards use IndexedDB on this device. Demo cards use a separate database and never read your real cards.</p><h2>Network requests</h2><p>The app does not send item data, barcodes, CSV rows, or photos to us. The service worker fetches app files from this site. The app has no account, sync, checkout, or billing request.</p><h2>Camera and files</h2><p>The camera starts only when you press “Scan with camera.” CSV and photo files are read on this device. You can deny camera access and type the code instead.</p><h2>Delete or export data</h2><p>Delete individual cards from the Cards page. Export CSV or a JSON backup before clearing this site’s browser data.</p><h2>Contact</h2><p>Questions can be sent to <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a>.</p></article></main>`, 'privacy');
 }
 
 function termsPage(): string {
-  setMeta('Terms — Barcode Intake Card', 'Terms for using Barcode Intake Card and its one-time license.', '/terms');
-  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Terms · 28 August 2026</p><h1 tabindex="-1">Use the tool as your own record</h1><p class="lede">You are responsible for checking item details, labels, backups, and camera results.</p><h2>What the tool provides</h2><p>Barcode Intake Card records information you enter and creates printable cards. It is not a product database, accounting system, or safety certification.</p><h2>Workshop license</h2><p>The $19 license is a one-time purchase for camera scanning. Sociobot is the merchant of record. A refund revokes the license. Manual intake and data export remain available without a license.</p><h2>No warranty</h2><p>The software is provided “as is” under the MIT License. Check every scan and print before relying on it.</p><h2>Your data</h2><p>You control your local records and backups. Removing browser data can remove your cards.</p></article></main>`);
+  setMeta('Terms — Barcode Intake Card', 'Terms for using Barcode Intake Card.', '/terms');
+  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Terms · 28 August 2026</p><h1 tabindex="-1">Use the tool as your own record</h1><p class="lede">You are responsible for checking item details, labels, backups, and camera results.</p><h2>What the tool provides</h2><p>Barcode Intake Card records information you enter and creates printable cards. Camera scanning, manual intake, and exports are included. It is not a product database, accounting system, or safety certification.</p><h2>No warranty</h2><p>The software is provided “as is” under the MIT License. Check every scan and print before relying on it.</p><h2>Your data</h2><p>You control your local records and backups. Removing browser data can remove your cards.</p></article></main>`);
 }
 
 function licensePage(): string {
-  setMeta('License — Barcode Intake Card', 'Buy or restore camera scanning for Barcode Intake Card.', '/license');
-  const paid = paidStatus();
-  return shell(`<main id="main"><div class="page legal"><p class="eyebrow">Workshop license</p><h1 tabindex="-1">Add camera scanning</h1><p class="lede">Pay $19 once to scan codes with this device’s camera. Manual intake and exports stay free.</p><div class="license-box"><p><strong>License status:</strong> <span id="license-status">${paid.unlocked ? 'Active on this device.' : escapeHtml(paid.message || 'No active license on this device.')}</span></p><p><a class="button" href="https://api.sociobot.in/api/v1/products/${PRODUCT}/checkout">Buy camera scanning</a></p><form id="license-form"><div class="field"><label for="license-token">Have a license? Paste it here</label><div class="license-row"><input id="license-token" name="license" autocomplete="off" required><button class="button button-secondary" type="submit">Verify license</button></div></div></form></div><p>Sociobot is the merchant of record. Refunds are handled there. Read the <a href="/terms" data-link>terms</a> and <a href="/privacy" data-link>privacy policy</a>.</p></div></main>`);
+  setMeta('Camera scanning — Barcode Intake Card', 'Camera scanning is included in Barcode Intake Card.', '/license');
+  return shell(`<main id="main"><div class="page legal"><p class="eyebrow">Camera reader</p><h1 tabindex="-1">Camera scanning is included</h1><p class="lede">There is no license, checkout, or account to set up.</p><div class="license-box"><p>Open the intake desk and choose <strong>Scan with camera</strong> when you are ready to grant camera access.</p><p><a class="button" href="/intake" data-link>Open the intake desk</a></p></div><p>Manual barcode entry and data export are available too. Read the <a href="/terms" data-link>terms</a> and <a href="/privacy" data-link>privacy policy</a>.</p></div></main>`);
 }
 
 function notFound(): string {
@@ -192,10 +157,7 @@ function notFound(): string {
 }
 
 async function render(moveFocus = false): Promise<void> {
-  await handleLicenseReturn();
   if (isDemo()) await seedDemo();
-  const savedLicense = localStorage.getItem(`sb_license:${PRODUCT}`);
-  if (savedLicense && !isDemo()) void verifyLicense(savedLicense);
   const path = routeUrl().pathname.replace(/\/$/, '') || '/';
   let html: string;
   if (path === '/') html = landing();
@@ -226,7 +188,6 @@ function bindPage(): void {
   document.querySelector('#csv-file')?.addEventListener('change', loadCsv);
   document.querySelector('#record-search')?.addEventListener('input', filterRecords);
   document.querySelector('#json-import')?.addEventListener('change', importJson);
-  document.querySelector('#license-form')?.addEventListener('submit', restoreLicense);
 }
 
 async function saveForm(event: Event): Promise<void> {
@@ -309,7 +270,6 @@ async function loadPhoto(event: Event): Promise<void> {
 }
 
 async function openScanner(): Promise<void> {
-  if (!paidStatus().unlocked) { navigate('/license'); return; }
   const dialog = document.querySelector<HTMLDialogElement>('#scanner-dialog');
   const video = document.querySelector<HTMLVideoElement>('#scanner-video');
   const status = document.querySelector('#scanner-status');
@@ -388,18 +348,6 @@ async function drawBarcode(): Promise<void> {
   } catch {
     svg.setAttribute('aria-label', `Barcode image unavailable. Code ${code}`);
   }
-}
-
-async function restoreLicense(event: Event): Promise<void> {
-  event.preventDefault();
-  const data = new FormData(event.currentTarget as HTMLFormElement);
-  const token = String(data.get('license') ?? '').trim();
-  const status = document.querySelector('#license-status');
-  if (!token || !status) return;
-  status.textContent = 'Checking the license…';
-  localStorage.setItem(`sb_license:${PRODUCT}`, token);
-  const valid = await verifyLicense(token, true);
-  status.textContent = valid ? 'Active on this device.' : 'This license is not active. Check the token and try again.';
 }
 
 document.addEventListener('click', (event) => {

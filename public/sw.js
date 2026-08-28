@@ -1,5 +1,5 @@
-const VERSION = 'barcode-intake-v1';
-const SHELL = ['/', '/offline.html', '/static.css', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/assets/receiving-desk.webp', '/assets/receiving-desk-600.webp', '/assets/app-v1.js', '/assets/app-v1.css', '/assets/scanner-v1.js', '/assets/barcode-v1.js'];
+const VERSION = 'barcode-intake-v2';
+const SHELL = ['/', '/offline.html', '/static.css', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/assets/receiving-desk.webp', '/assets/receiving-desk-600.webp', '/assets/app-v2.js', '/assets/app-v2.css', '/assets/scanner-v2.js', '/assets/barcode-v2.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {

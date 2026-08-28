@@ -13,7 +13,7 @@ Open `/demo`, or visit <https://barcode-intake-card.sociobot.in/demo>. It loads 
 ## What it does
 
 - Records a barcode, item name, supplier, location, quantity, notes, and a reduced photo.
-- Opens the device camera for barcode scanning with a $19 one-time workshop license.
+- Opens the device camera for barcode scanning with no account or checkout.
 - Matches a barcode against a CSV file chosen by the user.
 - Warns about saved cards with the same barcode.
 - Searches saved cards and prints one-up cards with Code 128 barcodes.
@@ -46,13 +46,13 @@ The exact deployment command is `npm run build`. Static output lands in `dist/`,
 
 ## Data and privacy
 
-Real cards use IndexedDB database `barcode-intake-real`. Demo cards use `barcode-intake-demo`. License tokens use namespaced local storage. The app sends no item, barcode, CSV, or photo data to a third party. License purchase and verification use the Sociobot billing API.
+Real cards use IndexedDB database `barcode-intake-real`. Demo cards use `barcode-intake-demo`. The app sends no item, barcode, CSV, or photo data to a third party. It has no account, sync, checkout, or billing request.
 
 The service worker caches the app shell. Export a JSON backup before clearing site data or moving devices. See `/privacy` and `/terms` in the app.
 
-## License purchase
+## Camera scanning
 
-Manual intake and all exports are free. The $19 one-time workshop license adds camera scanning. Checkout and license verification use Sociobot’s billing API; no payment provider is embedded here.
+Camera scanning, manual intake, and all exports are included. Choose **Scan with camera** from the intake form to request camera access. You can always type a barcode instead.
 
 ## Deployment
 

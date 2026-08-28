@@ -5,7 +5,7 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v1.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v2.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -13,20 +13,33 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByText('608ZZ shielded bearing')).toBeVisible();
 });
 
-test('@claim:local-only keeps demo item data on the same origin', async ({ page }) => {
+test('PWA repair cache activates with the versioned app shell', async ({ page }) => {
+  await page.goto('/demo');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v2'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v2.js')))).toBe(true);
+});
+
+test('@claim:local-only keeps item data in this browser without an account or sync', async ({ page }) => {
   const outside: string[] = [];
   page.on('request', (request) => {
     if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outside.push(request.url());
   });
-  await page.goto('/demo');
-  await page.getByRole('link', { name: 'Edit card' }).first().click();
-  await page.getByLabel('Review notes').fill('Checked without a supplier request.');
-  await page.getByRole('button', { name: 'Save card changes' }).click();
-  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+  await page.goto('/intake');
+  await page.getByLabel('Choose CSV').setInputFiles({ name: 'supplier.csv', mimeType: 'text/csv', buffer: Buffer.from('barcode,name,supplier,location,quantity\nLOCAL-1,Local test item,Private Supply,Bench 5,3') });
+  await page.getByLabel('Barcode or SKU').fill('LOCAL-1');
+  await page.getByLabel('Barcode or SKU').press('Tab');
+  await page.getByLabel('Item photo').setInputFiles({ name: 'item.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64') });
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByText('Local test item')).toBeVisible();
+  await page.goto('/records');
+  await expect(page.getByText('LOCAL-1')).toBeVisible();
+  await expect(page.getByRole('link', { name: /sign in|log in|create account/i })).toHaveCount(0);
   expect(outside).toEqual([]);
 });
 
-test('@claim:manual-intake saves a free manual item card', async ({ page }) => {
+test('@claim:manual-intake saves a manually entered item card', async ({ page }) => {
   await page.goto('/intake');
   await page.getByLabel('Barcode or SKU').fill('TEST-4042');
   await page.getByLabel('Item name').fill('Brass hose adapter');
@@ -119,19 +132,38 @@ test('@claim:demo-isolated keeps sample cards separate from real cards', async (
   await expect(page.getByText('608ZZ shielded bearing')).toHaveCount(0);
 });
 
-test('@claim:camera-ready opens the device camera only after a scan action', async ({ page, context }) => {
+test('@claim:demo-edit searches, edits, and prints a sample card', async ({ page }) => {
+  await page.goto('/demo');
+  await page.getByLabel('Search cards').fill('608ZZ');
+  await expect(page.getByText('608ZZ shielded bearing')).toBeVisible();
+  await page.getByLabel('Search cards').fill('');
+  await page.getByRole('link', { name: 'Edit card' }).first().click();
+  await page.getByLabel('Review notes').fill('Edited in the isolated demo.');
+  await page.getByRole('button', { name: 'Save card changes' }).click();
+  await expect(page.getByText('Edited in the isolated demo.')).toBeVisible();
+  await page.getByRole('link', { name: 'Back to cards' }).click();
+  await page.getByRole('link', { name: 'Print card' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
+});
+
+test('@claim:camera-ready opens the included device camera only after a scan action', async ({ page, context }) => {
   await context.grantPermissions(['camera'], { origin: 'http://127.0.0.1:4173' });
-  await page.goto('/intake?demo=1');
+  const outside: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outside.push(request.url());
+  });
+  await page.goto('/intake');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('a[href*="checkout"]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Scan with camera' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByText(/Camera ready|Hold one barcode/)).toBeVisible();
+  expect(outside).toEqual([]);
 });
 
-test('@claim:license-restore verifies a pasted Sociobot license', async ({ page }) => {
-  await page.route('https://api.sociobot.in/api/v1/products/barcode-intake-card/verify?license=test-license', (route) => route.fulfill({ json: { valid: true, reason: 'ok', expires_at: null } }));
-  await page.goto('/license');
-  await page.getByLabel('Have a license? Paste it here').fill('test-license');
-  await page.getByRole('button', { name: 'Verify license' }).click();
-  await expect(page.getByText('Active on this device.')).toBeVisible();
+test('@regression:checkout-dead-link keeps camera scanning usable without the unavailable billing SKU', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('a[href*="api.sociobot.in"]')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Open the intake desk' }).click();
+  await expect(page.getByRole('button', { name: 'Scan with camera' })).toBeEnabled();
 });

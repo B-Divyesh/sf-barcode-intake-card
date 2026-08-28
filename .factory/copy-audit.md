@@ -9,7 +9,7 @@ Counted with contractions and hyphenated terms as one word. Interface fragments 
 | It opens three ready-made cards you can search, edit, and print. | 11 | pass |
 | Cards stay in this browser | 5 | pass |
 | Works offline after the first visit | 6 | pass |
-| Manual intake is free | 4 | pass |
+| Camera scanning is included | 4 | pass |
 | Receive the odd parts first. | 5 | pass |
 | Choose a stock system later. | 5 | pass |
 | Record the facts you know now. | 6 | pass |
@@ -25,10 +25,8 @@ Counted with contractions and hyphenated terms as one word. Interface fragments 
 | Export a file when you need a backup or another system. | 11 | pass |
 | You choose the supplier file. | 5 | pass |
 | It is read in this browser. | 6 | pass |
-| Keep manual intake and all exports free. | 7 | pass |
-| Pay once for camera scanning on this device. | 8 | pass |
-| Sociobot is the merchant of record. | 6 | pass |
-| Refunds are handled there. | 4 | pass |
+| Camera scanning, manual intake, and exports are included on this device. | 10 | pass |
+| The camera starts only after you choose Scan with camera. | 10 | pass |
 
 No sentence exceeds 22 words. No banned word appears.
 
@@ -41,5 +39,5 @@ No sentence exceeds 22 words. No banned word appears.
 | Physical storage note | location |
 | User-selected lookup file | supplier CSV |
 | Isolated sample state | demo |
-| Paid camera feature | camera scanning |
+| Camera feature | camera scanning |
 | Portable full copy | backup |
