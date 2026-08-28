@@ -373,6 +373,7 @@ test('@claim:camera-ready opens the included device camera only after a scan act
 test('@regression:checkout-dead-link keeps camera scanning usable without the unavailable billing SKU', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('a[href*="api.sociobot.in"]')).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText('$19');
   await page.getByRole('link', { name: 'Open the intake desk' }).click();
   await expect(page.getByRole('button', { name: 'Scan with camera' })).toBeEnabled();
 });

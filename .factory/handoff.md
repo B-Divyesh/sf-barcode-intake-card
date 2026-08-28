@@ -2,11 +2,15 @@
 
 ## Repair 3 result
 
-All three release blockers from verifier commit `c0e219476f2e67ac69633938824ad706294456a5` against candidate `db64420e3965dd8e8502729fa15783f3a9e80a09` are repaired. The researched brief, static PWA artifact class, local-only storage model, and previously passing behavior are unchanged.
+All release blockers documented in verifier commit `c0e219476f2e67ac69633938824ad706294456a5` are repaired. The researched brief's receiving workflow, static PWA artifact class, local-only storage model, and previously passing behavior are unchanged.
 
-1. JSON restore now requires backup version 1, a valid export date, every complete field with its correct type, printable barcode text, valid dates and photo data, and unique IDs. All records are written in one IndexedDB transaction only after the whole file passes. Invalid shape, version, or type leaves existing cards unchanged. The ledger also sorts defensively, so records already damaged by the old importer no longer crash `/records`.
-2. The intake form now accepts only the printable Code 128 range and explains it before save. The exact verifier value `部品-１２３` is rejected with an announced recovery message. If an older stored record still cannot render, the print page shows a visible alert, disables **Print card**, and links directly to **Edit this card**.
-3. **Start for real** now clears the isolated demo database before opening real intake. Reopening `/demo` reseeds the original three samples, so edits cannot survive demo exit.
+1. The unregistered paid camera-scanning checkout is removed rather than left as a dead purchase path. Camera scanning is now included on-device: the landing page, intake flow, `/license`, README, and terms say there is no checkout or account. No `$19`, checkout URL, `api.sociobot.in` link, license-restore path, or billing request remains in the shipped app. This is the closest honest useful version while no factory billing SKU is registered.
+2. The claim inventory now has a dedicated `demo-edit` claim for the landing promise. The strengthened `local-only` claim explicitly covers item cards, chosen supplier CSV rows, photos, no account, and no sync; its tagged browser test uploads a CSV and photo, saves, hard-reloads, reopens the card, and asserts the CSV-derived fields and JPEG remain local with no cross-origin request. The removed checkout/price promise has no remaining visitor-facing copy. `camera-ready` and `@regression:checkout-dead-link` prove scanning opens from the intake action without a checkout link or request.
+
+3. JSON restore now requires backup version 1, a valid export date, every complete field with its correct type, printable barcode text, valid dates and photo data, and unique IDs. All records are written in one IndexedDB transaction only after the whole file passes. Invalid shape, version, or type leaves existing cards unchanged. The ledger also sorts defensively, so records already damaged by the old importer no longer crash `/records`.
+4. The intake form now accepts only the printable Code 128 range and explains it before save. The exact verifier value `部品-１２３` is rejected with an announced recovery message. If an older stored record still cannot render, the print page shows a visible alert, disables **Print card**, and links directly to **Edit this card**.
+5. **Start for real** now clears the isolated demo database before opening real intake. Reopening `/demo` reseeds the original three samples, so edits cannot survive demo exit.
+6. Supplier CSV matches now replace the untouched default quantity of `1`, including a valid matched quantity of `0`, while leaving entered values alone. The CSV claim test asserts name, supplier, location, and zero quantity.
 
 The immutable app shell, service-worker cache, install URL, and visible build number advance from v3/v1.0.2 to v5/v1.0.3.
 
@@ -14,6 +18,9 @@ The immutable app shell, service-worker cache, install URL, and visible build nu
 
 `tests/claims.spec.ts` now proves:
 
+- a camera scan action is available without a checkout or cross-origin billing request, and neither an API checkout anchor nor `$19` purchase copy appears on the live app;
+- the complete local-only privacy contract persists CSV-derived fields and a JPEG photo after a hard reload, with no cross-origin request or account link;
+- CSV lookup fills the complete matching row, including an explicit zero quantity instead of keeping the form's default `1`;
 - the verifier's partial backup, an unsupported version, and a wrong field type are rejected; a valid record placed before an invalid one is not partially written; the existing card survives reload;
 - a browser already containing the verifier's incomplete record still renders its ledger without a page error;
 - `部品-１２３` cannot be saved, while the supported sample still produces contrasting pixels and decodes as `5901234123457`;
@@ -27,16 +34,22 @@ The immutable app shell, service-worker cache, install URL, and visible build nu
 - Every command in `.factory/claims.json`: passed independently, 15 of 15.
 - `npm test`: 32 of 32 Playwright tests passed. This includes the production build, claim, regression, offline, camera, keyboard, 390 px touch-target, route, console, and axe checks.
 - `npx tsc --noEmit`: passed. No separate lint script is configured.
-- `npm run build`: passed with `dist/index.html` at the root. Initial app JavaScript is 32.97 KB raw / 11.27 KB gzip and CSS is 11.85 KB raw / 3.57 KB gzip. Deferred barcode and scanner chunks are 14.72 KB and 108.68 KB gzip.
-- Factory `verify-url.sh`: passed in 561 ms with the expected title, `lang=en`, one `h1`, one `main`, zero missing image alternatives, zero unnamed buttons, and zero console errors. Evidence: [`qa-artifacts/repair-3-local-verify/verify.json`](qa-artifacts/repair-3-local-verify/verify.json).
+- `npm run build`: passed with `dist/index.html` at the root. Initial app JavaScript is 33.04 KB raw / 11.29 KB gzip and CSS is 11.85 KB raw / 3.57 KB gzip. Deferred barcode and scanner chunks are 14.72 KB and 108.68 KB gzip.
+- Factory `verify-url.sh` passed locally in 573 ms and live in 795 ms with the expected title, `lang=en`, one `h1`, one `main`, zero missing image alternatives, zero unnamed buttons, and zero console errors. Live evidence: [`qa-artifacts/repair-3-live-verify/verify.json`](qa-artifacts/repair-3-live-verify/verify.json).
 - Desktop and 390 × 844 visual checks show no horizontal overflow. Evidence: [`desktop`](qa-artifacts/repair-3-local-desktop.png), [`mobile`](qa-artifacts/repair-3-local-mobile.png), and [`Unicode rejection`](qa-artifacts/repair-3-local-unicode-rejected.png).
 - Lighthouse 13.4.1 mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 2.0 s, CLS 0, TBT 0 ms. Evidence: [`lighthouse-repair-3-local.json`](qa-artifacts/lighthouse-repair-3-local.json).
 - Privacy and response policy remain unchanged: tested flows make only same-origin GET requests; CSP permits only the app's required same-origin/data/blob resources; no analytics, account, sync, billing, or third-party runtime request exists.
 - Package/consumer and backend response/rate-limit tests are not applicable to this static PWA. The deployed route and security-header checks are recorded below after deployment.
 
-## Repair 3 deployment
+## Repair 3 deployment and live identity
 
-Pending the committed production deployment and live identity checks.
+Commit `92c5224` was pushed to `origin/main` and deployed with `/opt/fleet/lib/deploy-static.sh barcode-intake-card dist` on 2026-08-28. Azure Static Web Apps deployment `2676051a-f041-4fb3-80a4-f593da268176` succeeded at <https://barcode-intake-card.sociobot.in>.
+
+- All 20 served files from `dist/` match the live origin by SHA-256. `staticwebapp.config.json` is deployment configuration and is not a served file.
+- `/`, `/demo`, `/intake`, `/records`, `/privacy`, `/terms`, `/license`, and `/print/demo-bearing?demo=1` return 200; `/does-not-exist` returns the designed 404 with HTTP 404.
+- At 390 × 844 every checked route has `scrollWidth = 390`, one `h1`, a route-specific title, and no console/page errors. Tab reaches **Skip to main content** first.
+- Live landing inspection found zero checkout/API anchors and no `$19` copy. The usable scan action remains enabled on `/intake`.
+- The live response uses same-origin CSP, `nosniff`, strict-origin referrer policy, camera-only permissions policy, and HSTS. Evidence: [`qa-artifacts/repair-3-live-headers.txt`](qa-artifacts/repair-3-live-headers.txt).
 
 ## Independent verification 3 — input report
 
@@ -106,4 +119,4 @@ The committed candidate `3d965b955a686e67cdf0b00df75371c1fd6b657d` was pushed to
 
 ## Known gap
 
-There is intentionally no paid SKU in this release. The earlier factory repair removed the dead billing gate because no registered Sociobot product exists. Reintroducing payment requires factory-side catalogue registration before adding the documented hosted checkout and license verification flow.
+There is intentionally no paid SKU in this release. The dead billing gate was removed because no registered Sociobot product exists. Reintroducing payment requires factory-side catalogue registration before adding the documented hosted checkout and license verification flow; it must not gate the core scanner until then.
