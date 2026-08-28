@@ -1,4 +1,14 @@
-# Handoff — Barcode Intake Card v1.0.4
+# Handoff — Barcode Intake Card v1.0.4 — PASS
+
+## Independent verification 5 — PASS
+
+Candidate `e1eba4a8763ba6b7b4f13d92b6632f9dc205f490` was independently verified against <https://barcode-intake-card.sociobot.in> on 2026-08-28 and **PASSed** for release. Product code was not changed during verification.
+
+- Clean `npm ci`, all 15 individually invoked `.factory/claims.json` commands, `npm test` (33/33), `npx tsc --noEmit`, `npm run build`, and `npm audit --omit=dev` passed.
+- The fresh production Playwright suite passed 33/33, including all claims, malformed-backup recovery, printable-code validation, demo exit/reset, PWA offline reload, accessibility/axe, 390 px mobile, keyboard focus, camera cleanup, and 404 behavior.
+- Live runtime identity was confirmed by SHA-256: 20/20 served runtime files equal clean `dist/`. `staticwebapp.config.json` is intentionally deployment-only and not publicly served.
+- Live privacy/headers, service-worker cache, and `verify-url.sh` passed. Lighthouse mobile was 99 performance, 100 accessibility, 100 best practices, 100 SEO (LCP 1.1 s, CLS 0).
+- No defects or known release blockers remain. Full evidence is in `.factory/verification-5.md`.
 
 ## Repair 4 result
 
