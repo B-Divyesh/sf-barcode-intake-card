@@ -1,0 +1,23 @@
+{
+  "home": {
+    "title": "Barcode Intake Card — Make printable item cards",
+    "h1": "Turn scanned barcodes into item cards",
+    "hasDemoAction": true,
+    "copy": true,
+    "appV13": true
+  },
+  "demo": {
+    "h1": "Review sample intake cards",
+    "banner": "Demo — sample data, nothing is saved to your real cards.Reset demoStart for real",
+    "reset": true,
+    "real": true,
+    "cards": 3
+  },
+  "terms": {
+    "title": "Terms — Barcode Intake Card",
+    "h1": "Terms for using Barcode Intake Card"
+  },
+  "missingStatus": 404,
+  "licenseStatus": 301,
+  "errorsBefore404": []
+}

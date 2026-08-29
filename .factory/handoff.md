@@ -1,53 +1,64 @@
-# Handoff — adversarial review 6
+# Handoff — perfection-loop round 6
 
 ## Outcome
 
-Reviewed production at <https://barcode-intake-card.sociobot.in> from fresh
-390 px and desktop browser contexts. No product code was changed. The verdict
-in `.factory/review-6.md` is **FAIL** with three blocking, historically
-half-fixed findings and two minor findings.
+Released Barcode Intake Card v1.0.11 at
+<https://barcode-intake-card.sociobot.in>. The repair commit is
+`66b92f8420b519b87cf50e747cf116fca38a4f04` (`fix: close review six
+acceptance gaps`), deployed as Azure Static Web Apps deployment
+`c95c1aea-5ad5-4223-8174-2030dd74a4c4`.
 
-## What was done
+All five review-6 findings and every previously recorded finding are closed.
+The artifact remains a local-first Vite/TypeScript PWA with its monochrome
+workshop-broadsheet visual system, one-click isolated demo, no tracking, and
+no third-party data path.
 
-- Recorded cold first-screen and settled demo screenshots.
-- Audited every landing and README sentence, heading, and action.
-- Ran all 18 commands in `.factory/claims.json` separately from clean clone
-  `/tmp/barcode-review6-clean-F9iLLE`.
-- Exercised live demo edit/reset/exit behavior and confirmed a pre-existing
-  real card remained untouched.
-- Recorded the live request log: all requests were same-origin.
-- Rechecked every finding from reviews 1–5 against current production and
-  code, then checked all five polish reports and the previous handoff.
-- Crawled every rendered link; checked route metadata, the designed HTTP 404,
-  `/license` redirect, deep links, Back/Forward scroll and focus, response
-  headers, accessibility, and the product-specific visual system.
+## What changed
 
-## Verification results
+- Registered the printable Code 128 character-set promise in
+  `.factory/claims.json`. Its exact claim test rejects unsupported script input,
+  then saves, prints, and decodes `PART A-12/3`.
+- Repaired the two remaining landing terminology mismatches: **all cards**
+  replaces “every record,” and **supplier CSV** replaces “supplier file.”
+- Renamed the Terms h1 to **Terms for using Barcode Intake Card** and added a
+  title/h1 regression.
+- Replaced the flaky fake-camera dependency with a delayed deterministic
+  `MediaStream` fixture. The product now waits for a live video track before
+  announcing “Camera ready”; Escape and route teardown both end the fixture's
+  track.
+- Cache-busted the repair to v1.0.11 / `app-v13` / `barcode-intake-v13`, and
+  updated the manifest start URL and 404 build label.
+- Updated the verb-first catalog description to “Create private, printable
+  item cards from barcodes.”
 
-- Exact claim commands: **18/18 passed**.
-- Second clean-clone aggregate `npm test`: **40/40 passed** and built `dist/`.
-- Production Playwright suite: **40/40 passed**.
-- The first clean aggregate passed 39/40; the camera-track teardown regression
-  timed out once, then passed five isolated reruns and the second aggregate.
-  This nondeterminism is review finding F-6-5.
-- `verify-url.sh`: passed with no console errors, one h1, one main, `lang=en`,
-  no missing image alternatives, and no unnamed buttons.
-- Link crawl: all HTTP destinations passed; unknown route returned 404 and
-  `/license` returned 301 to `/intake`.
-- Evidence: `.factory/qa-evidence/review-6/`.
+## Verification
 
-## Findings left for the next worker
+- Fresh clone `/tmp/barcode-intake-polish6-clean-w9DXb9` at `66b92f8`:
+  `npm ci` passed with zero audit vulnerabilities. All **18** exact commands
+  declared in `.factory/claims.json` passed independently.
+- Local `npm test` passed **41/41** three consecutive times with zero retries;
+  `npm run build` produced `dist/index.html`. Initial JS is 33.79 KB raw /
+  11.36 KB gzip, and CSS is 11.76 KB raw / 3.58 KB gzip.
+- Production `PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npm test`
+  passed **41/41**, including claims, offline/PWA, local-only request logging,
+  camera lifecycle, mobile targets, keyboard/focus/routing, HTTP 404, and axe.
+- `verify-url.sh` passed cold production: title, `lang=en`, one h1, main
+  landmark, image alternatives, named buttons, and no console error. See
+  `.factory/qa-artifacts/polish-6-live/verify/verify.json`.
+- Cold live recheck passed: root loads `app-v13`, `?demo=1` immediately shows
+  three cards plus the persistent “nothing is saved” banner, Reset demo, and
+  Start for real; Terms has its literal title/h1; unknown URLs are HTTP 404;
+  `/license` is HTTP 301 to `/intake`. See
+  `.factory/qa-artifacts/polish-6-live/live-check.json` and screenshots in
+  that directory.
+- Live mobile Lighthouse: **99 Performance, 100 Accessibility, 100 Best
+  Practices, 100 SEO**; LCP 1,603 ms, CLS 0, TBT 0. See
+  `.factory/qa-artifacts/polish-6-live/lighthouse-mobile-final.json`.
 
-- F-6-1: register and positively test the advertised printable character set;
-  this is the unfinished part of F-1-2.
-- F-6-2: replace landing “every record” with consistent item-card wording;
-  this is the unfinished part of F-1-9.
-- F-6-3: replace landing “supplier file” with “supplier CSV”; this is the
-  unfinished part of F-1-23.
-- F-6-4: rename the Terms h1 so it identifies the page plainly.
-- F-6-5: make the fake-camera teardown regression deterministic and prove the
-  clean aggregate is stable across repeated runs.
+## Known gaps and next steps
 
-No AI, sync, billing, or additional transfer feature is recommended. The
-deterministic local workflow already includes supplier CSV matching, CSV
-export, and complete JSON backup/restore.
+None. No AI, sync, or billing feature is appropriate for this deterministic,
+private barcode-intake workflow. Supplier CSV matching plus CSV and JSON
+export cover the relevant transfer needs.
+
+See `.factory/polish-6.md` for the complete finding-by-finding repair map.
