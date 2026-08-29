@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.10';
+const BUILD = 'v1.0.11';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
@@ -103,8 +103,8 @@ function landing(): string {
           <div class="preview-meta"><div><small>Location</small><strong>Bin A-14</strong></div><div><small>Quantity</small><strong>12</strong></div><div class="preview-notes"><small>Notes</small><strong>Check bore before restocking.</strong></div></div>
         </div>
       </section>
-      <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Scan a barcode, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Camera scanning fills the barcode field. You can also type English letters, numbers, spaces, and punctuation.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or export the card</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>
-      <section class="section" aria-labelledby="bounds-title"><div class="section-heading"><h2 id="bounds-title">What this tool does not do</h2></div><div class="limits"><p><strong>No automatic web lookup.</strong><br>Supplier and stock details do not leave your device.</p><p><strong>No purchase orders.</strong><br>This records arrivals. It does not run procurement.</p><p><strong>No account or sync.</strong><br>Export a file when you need a backup or another system.</p><p><strong>CSV lookups are explicit.</strong><br>You choose the supplier file. It is read in this browser.</p></div></section>
+      <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Scan a barcode, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Camera scanning fills the barcode field. You can also type English letters, numbers, spaces, and punctuation.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or export the card</h3><p>Print one item card, or export all cards as CSV or JSON.</p></div></div></section>
+      <section class="section" aria-labelledby="bounds-title"><div class="section-heading"><h2 id="bounds-title">What this tool does not do</h2></div><div class="limits"><p><strong>No automatic web lookup.</strong><br>Supplier and stock details do not leave your device.</p><p><strong>No purchase orders.</strong><br>This records arrivals. It does not run procurement.</p><p><strong>No account or sync.</strong><br>Export a file when you need a backup or another system.</p><p><strong>CSV lookups are explicit.</strong><br>You choose the supplier CSV. It is read in this browser.</p></div></section>
       <section class="section" aria-labelledby="camera-title"><div class="price-strip"><div><p class="eyebrow">Camera reader</p><h2 id="camera-title">Scan barcodes with the camera</h2><p>Camera scanning, manual entry, and exports are free to use.</p></div><div><a class="button" href="/intake" data-link>Record an item</a></div></div><p>The camera starts only after you choose <strong>Scan with camera</strong>.</p></section>
     </article>
   </main>`);
@@ -171,7 +171,7 @@ function privacyPage(): string {
 
 function termsPage(): string {
   setMeta('Terms — Barcode Intake Card', 'Terms for using Barcode Intake Card.', '/terms');
-  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Terms · 28 August 2026</p><h1 tabindex="-1">Use the tool as your own record</h1><p class="lede">You are responsible for checking item details, labels, backups, and camera results.</p><h2>What the tool provides</h2><p>Barcode Intake Card records information you enter and creates printable cards. Camera scanning, manual entry, and exports are free to use. It is not a product database, accounting system, or safety certification.</p><h2>No warranty</h2><p>The software is provided “as is” under the MIT License. Check every scan and print before relying on it.</p><h2>Your data</h2><p>You control your local records and backups. Removing browser data can remove your cards.</p></article></main>`);
+  return shell(`<main id="main"><article class="page legal"><p class="eyebrow">Terms · 28 August 2026</p><h1 tabindex="-1">Terms for using Barcode Intake Card</h1><p class="lede">You are responsible for checking item details, labels, backups, and camera results.</p><h2>What the tool provides</h2><p>Barcode Intake Card records information you enter and creates printable cards. Camera scanning, manual entry, and exports are free to use. It is not a product database, accounting system, or safety certification.</p><h2>No warranty</h2><p>The software is provided “as is” under the MIT License. Check every scan and print before relying on it.</p><h2>Your data</h2><p>You control your local records and backups. Removing browser data can remove your cards.</p></article></main>`);
 }
 
 function notFound(): string {
@@ -348,8 +348,10 @@ async function openScanner(): Promise<void> {
   try {
     const { BrowserMultiFormatReader } = await import('@zxing/browser');
     const reader = new BrowserMultiFormatReader();
+    let decoded = false;
     const controls = await reader.decodeFromVideoDevice(undefined, video, (result) => {
       if (!result) return;
+      decoded = true;
       const input = document.querySelector<HTMLInputElement>('#barcode');
       if (input) {
         input.value = result.getText();
@@ -364,11 +366,39 @@ async function openScanner(): Promise<void> {
       (video.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
       return;
     }
+    if (decoded) {
+      scannerStop = () => controls.stop();
+      return;
+    }
+    if (!await waitForLiveCameraTrack(video, dialog, session)) {
+      controls.stop();
+      (video.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
+      if (session === scannerSession && dialog.open) status.textContent = 'The camera could not start. Close this window and type the code.';
+      return;
+    }
+    if (decoded || session !== scannerSession || !dialog.open) {
+      if (decoded) scannerStop = () => controls.stop();
+      else {
+        controls.stop();
+        (video.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
+      }
+      return;
+    }
     scannerStop = () => controls.stop();
     status.textContent = 'Camera ready. Hold one barcode inside the frame.';
   } catch (error) {
     status.textContent = error instanceof DOMException && error.name === 'NotAllowedError' ? 'Camera access was denied. Allow camera access, or close this window and type the code.' : 'The camera could not start. Close this window and type the code.';
   }
+}
+
+async function waitForLiveCameraTrack(video: HTMLVideoElement, dialog: HTMLDialogElement, session: number): Promise<boolean> {
+  const deadline = performance.now() + 2000;
+  while (session === scannerSession && dialog.open && performance.now() < deadline) {
+    const tracks = (video.srcObject as MediaStream | null)?.getTracks() ?? [];
+    if (tracks.some((track) => track.readyState === 'live')) return true;
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 20));
+  }
+  return false;
 }
 
 function stopScanner(): void {

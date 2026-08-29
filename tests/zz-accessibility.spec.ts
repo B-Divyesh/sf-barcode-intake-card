@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+
+test.use({ serviceWorkers: 'block' });
 
 for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms']) {
   test(`page basics and axe: ${route}`, async ({ page }) => {
@@ -17,6 +19,17 @@ for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms'])
   });
 }
 
+test('landing and terms use the published item-card and supplier-CSV language', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('Print one item card, or export all cards as CSV or JSON.')).toBeVisible();
+  await expect(page.getByText('You choose the supplier CSV. It is read in this browser.')).toBeVisible();
+  await expect(page.getByText(/export every record|supplier file/i)).toHaveCount(0);
+
+  await page.goto('/terms');
+  await expect(page).toHaveTitle('Terms — Barcode Intake Card');
+  await expect(page.getByRole('heading', { level: 1, name: 'Terms for using Barcode Intake Card' })).toBeVisible();
+});
+
 test('mobile intake fits at 390 pixels and supports keyboard entry', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/intake');
@@ -31,7 +44,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v12.js', async (route) => {
+  await page.route('**/assets/app-v13.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();
@@ -49,11 +62,34 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   expect(metrics.height).toBeLessThan(300);
 });
 
+async function installDelayedCameraFixture(page: Page): Promise<void> {
+  await page.route('**/assets/scanner-v13.js', async (route) => {
+    await route.fulfill({
+      contentType: 'application/javascript',
+      body: `export class BrowserMultiFormatReader {
+        async decodeFromVideoDevice(_device, video) {
+          const canvas = document.createElement('canvas');
+          const stream = canvas.captureStream(1);
+          setTimeout(() => {
+            window.qaCameraStatusBeforeTrack = document.querySelector('#scanner-status')?.textContent;
+            video.srcObject = stream;
+            void video.play().catch(() => undefined);
+          }, 250);
+          return { stop() { stream.getTracks().forEach((track) => track.stop()); video.srcObject = null; } };
+        }
+      }`
+    });
+  });
+}
+
 test('camera tracks end after Escape and route teardown', async ({ page }) => {
+  await installDelayedCameraFixture(page);
   await page.goto('/intake');
   await page.getByRole('button', { name: 'Scan with camera' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect.poll(() => page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => video.srcObject?.getTracks()[0]?.readyState)).toBe('live');
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { qaCameraStatusBeforeTrack?: string }).qaCameraStatusBeforeTrack)).toBe('Starting the camera…');
+  await expect(page.locator('#scanner-status')).toHaveText('Camera ready. Hold one barcode inside the frame.');
   await page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => {
     (window as typeof window & { qaCameraTrack?: MediaStreamTrack }).qaCameraTrack = video.srcObject?.getTracks()[0];
   });
@@ -61,9 +97,13 @@ test('camera tracks end after Escape and route teardown', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect.poll(() => page.evaluate(() => (window as typeof window & { qaCameraTrack?: MediaStreamTrack }).qaCameraTrack?.readyState)).toBe('ended');
   await expect(page.getByRole('button', { name: 'Scan with camera' })).toBeFocused();
+  await expect.poll(() => page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => video.srcObject === null)).toBe(true);
 
+  await page.goto('/intake');
   await page.getByRole('button', { name: 'Scan with camera' }).click();
   await expect.poll(() => page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => video.srcObject?.getTracks()[0]?.readyState)).toBe('live');
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { qaCameraStatusBeforeTrack?: string }).qaCameraStatusBeforeTrack)).toBe('Starting the camera…');
+  await expect(page.locator('#scanner-status')).toHaveText('Camera ready. Hold one barcode inside the frame.');
   await page.locator('#scanner-video').evaluate((video: HTMLVideoElement) => {
     (window as typeof window & { qaRouteTrack?: MediaStreamTrack }).qaRouteTrack = video.srcObject?.getTracks()[0];
   });

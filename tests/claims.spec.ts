@@ -9,7 +9,7 @@ test('@claim:offline-reload works offline after the first visit', async ({ page,
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample intake cards');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v12.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v13.js')))).toBe(true);
   await context.setOffline(true);
   await page.getByRole('link', { name: 'Edit card' }).first().click();
   await expect(page.getByRole('heading', { name: 'Review this item card' })).toBeVisible();
@@ -28,9 +28,9 @@ test('PWA repair cache activates with the versioned app shell', async ({ page })
   await page.reload();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v12'))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v13'))).toBe(true);
   await expect.poll(() => page.evaluate(async () => (await caches.keys()).includes('barcode-intake-v4'))).toBe(false);
-  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v12.js')))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/assets/app-v13.js')))).toBe(true);
 });
 
 test('@claim:local-only keeps cards, chosen CSV rows, and photos in this browser without an account or sync', async ({ page }) => {
@@ -243,7 +243,7 @@ test('@regression:backup-validation rejects bad shape, version, and types withou
   expect(pageErrors).toEqual([]);
 });
 
-test('@claim:print-card renders a decodable barcode under the production policy', async ({ page }) => {
+test('@claim:print-card prints English letters, numbers, spaces, and punctuation as a decodable Code 128 barcode', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/intake');
@@ -254,8 +254,11 @@ test('@claim:print-card renders a decodable barcode under the production policy'
   await expect(page.locator('#form-status')).toHaveText('Use English letters, numbers, spaces, or standard punctuation. This barcode format cannot print other scripts.');
   await expect(page).toHaveURL(/\/intake$/);
 
-  const response = await page.goto('/print/demo-bearing?demo=1');
-  expect(response?.headers()['content-security-policy']).toContain("style-src 'self'");
+  await page.getByLabel('Barcode or SKU').fill('PART A-12/3');
+  await page.getByLabel('Item name').fill('Printable character set test');
+  await page.getByLabel('Location note').fill('Print bench');
+  await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
   const barcode = page.locator('#print-barcode');
   await expect(barcode).toHaveAttribute('aria-label', /Barcode/);
   await expect.poll(() => barcode.evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(250);
@@ -277,8 +280,8 @@ test('@claim:print-card renders a decodable barcode under the production policy'
   hints.set(DecodeHintType.TRY_HARDER, true);
   const source = new RGBLuminanceSource(Uint8ClampedArray.from(pixels.luminances), pixels.width, pixels.height);
   const decoded = new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(source)), hints);
-  expect(decoded.getText()).toBe('5901234123457');
-  await expect(page.getByText('Bin A-14')).toBeVisible();
+  expect(decoded.getText()).toBe('PART A-12/3');
+  await expect(page.getByText('Print bench')).toBeVisible();
   expect(errors).toEqual([]);
 });
 
