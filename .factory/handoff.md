@@ -1,41 +1,26 @@
-# Handoff — polish 3 complete
+# Handoff — adversarial review 4
 
 ## Outcome
 
-Released the cumulative repair for Barcode Intake Card at
-<https://barcode-intake-card.sociobot.in>.
+Completed the fourth cold first-read review of <https://barcode-intake-card.sociobot.in>. The verdict is **FAIL** because the zero-finding standard is not met. Three minor findings are documented in `.factory/review-4.md`:
 
-- `f0244ec840bdaa4e91279a8234be3d5be72ca2a1` removes the misleading license page, adds the tested no-checkout claim, fixes supplier search guidance, labels the external footer link, and bumps the PWA cache.
-- `87722545784a6066a50a35809372475fce71a7ad` gives the longer demo search hint a full mobile row, so all four fields remain visible at 390 px, and bumps the cache again.
-- `/license` now returns `301 Location: /intake`; it is absent from the sitemap and no longer renders camera instructions.
-- The first screen now plainly says the shipped tool is free to use with no account or checkout. This is an intentional deviation from the brief’s earlier `one-time` monetization note: the deployed product has no billing flow or stated price, so adding a fictional paid tier would be misleading. The complete currently shipped tool is free and that observable promise is registered as `free-no-checkout`.
+- the landing preview depicts an intake number and review status that real item cards do not have;
+- the hero caption retains the decorative “Fig. 01” label;
+- the README calls `npm run build` a deployment command even though it only creates `dist/`.
 
-## Verification
+No product code was changed.
 
-Final clean clone: `/tmp/barcode-intake-card-polish3-final-clean` at `8772254`.
+## Verification performed
 
-- `npm ci` passed; audit reported zero vulnerabilities.
-- Every exact command in `.factory/claims.json` was executed individually: **18/18 passed**.
-- `npm test` from the final clean clone passed **36/36** and produced `dist/`.
-- Final production run, `PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npx playwright test`, passed **36/36**.
-- `/opt/fleet/lib/verify-url.sh https://barcode-intake-card.sociobot.in .factory/qa-evidence/polish-3-live` passed: HTTP 200, no console errors, title, `lang=en`, one `h1`, one `main`, alt text, and labelled buttons.
-- Live axe coverage passed on `/`, `/demo`, `/intake`, `/records`, `/privacy`, and `/terms`; there were no serious or critical findings.
-- Live mobile checks passed for 44 px targets, keyboard skip link, reduced motion, offline reload, demo reset/exit, and the designed HTTP 404.
-- Two live Lighthouse 13.4.1 mobile runs scored **100 / 100 / 100 / 100** (Performance / Accessibility / Best Practices / SEO). LCP was 1.210 s then 1.099 s; CLS was 0 in both runs.
-- Final built initial application JavaScript is 32.66 KB raw / 11.05 KB gzip; CSS is 11.71 KB raw / 3.57 KB gzip. Deferred scanner and barcode chunks are 108.68 KB and 14.72 KB gzip.
+- Opened production cold in fresh 390 × 844 and 1440 × 900 Chromium contexts.
+- Entered the sample-data demo in one click and verified its seeded first screen, persistent banner, reset, exit, real-card preservation, separate IndexedDB namespaces, and same-origin request log.
+- Created clean clone `/tmp/barcode-intake-review4-clean-WatdhN`, ran `npm ci`, and ran all 18 exact `.factory/claims.json` commands individually; all passed.
+- Ran aggregate `npm test` from the clean clone: **36/36 passed**, `dist/` was produced.
+- Ran the aggregate suite against production: **36/36 passed**.
+- Crawled all rendered links and checked route titles, metadata, canonical links, h1/main counts, 404 behavior, `/license` redirect, deep links, browser Back, and route-change focus.
+- Ran `/opt/fleet/lib/verify-url.sh` against production; it passed with no console errors or basic accessibility defects.
+- Rechecked all 29 findings from reviews 1–3 on the live site and in code/tests; all earlier findings remain fixed.
 
-Live evidence is committed under `.factory/qa-evidence/polish-3-live/`, including desktop/mobile landing captures, the isolated demo, the 404, verifier output, and both Lighthouse reports. `.factory/polish-3.md` maps every cumulative finding to its evidence.
+## Next steps
 
-## Run and deploy
-
-```bash
-npm ci
-npm test
-npm run build
-```
-
-Deploy `dist/` as the configured static site. The final deployment was checked cold at the production URL; `?demo=1` opens isolated sample data with Reset demo and Start for real.
-
-## Known gaps and next steps
-
-None. The local-first PWA intentionally has no account, sync, AI service, or billing flow.
+Resolve F-4-1 through F-4-3, deploy through the factory workflow, and repeat the review from a fresh browser context. A PASS requires zero findings.
