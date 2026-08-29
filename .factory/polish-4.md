@@ -1,8 +1,8 @@
 # Polish 4 — cumulative zero-finding repair map
 
-**Repair commits:** `0e04afd20620e8ada252a77defcf1c9d1d67e374`, `d9a3968b2b0fd86a7eed974178af9ee577b72405`  
-**Deployed release:** v1.0.9, service-worker cache `barcode-intake-v11`  
-**Production URL:** <https://barcode-intake-card.sociobot.in>  
+**Repair commits:** `0e04afd20620e8ada252a77defcf1c9d1d67e374`, `d9a3968b2b0fd86a7eed974178af9ee577b72405`
+**Deployed release:** v1.0.9, service-worker cache `barcode-intake-v11`
+**Production URL:** <https://barcode-intake-card.sociobot.in>
 **Deployment:** Static work order, Azure deployment `85b6cfe6-ee3e-4e7d-b3b0-c9d7c623eddb`
 
 ## Final evidence key
