@@ -1,4 +1,17 @@
-# Handoff — perfection-loop round 6
+# Handoff — adversarial review 7
+
+## Review 7 outcome
+
+Review 7 passed with zero findings. No product code changed in this review.
+Fresh clean-clone claim commands passed 18/18; the live aggregate suite passed
+41 tests; `npm run build` produced `dist/`. Fresh live phone/desktop contexts
+confirmed first-read clarity, isolated reset/exit/re-entry demo behavior,
+same-origin privacy behavior, routes, metadata, HTTP 404, and no console
+errors. Mobile Lighthouse recorded LCP 1.65 s, CLS 0, and TBT 0 (the browser
+crashed only after metric capture while taking its final screenshot).
+
+See `.factory/review-7.md` for full evidence and all historical finding
+confirmations. No known gaps remain.
 
 ## Outcome
 
