@@ -1,65 +1,53 @@
-# Handoff — perfection-loop round 5
+# Handoff — adversarial review 6
 
 ## Outcome
 
-Released Barcode Intake Card v1.0.10 at
-<https://barcode-intake-card.sociobot.in>. The four review-5 findings and all
-retained findings from reviews 1–4 are closed. The product remains a
-local-first Vite/TypeScript PWA with its monochrome workshop-broadsheet visual
-system, isolated one-click demo, no tracking, and no third-party data path.
+Reviewed production at <https://barcode-intake-card.sociobot.in> from fresh
+390 px and desktop browser contexts. No product code was changed. The verdict
+in `.factory/review-6.md` is **FAIL** with three blocking, historically
+half-fixed findings and two minor findings.
 
-The executable repair is commit
-`91971a28d2046cd00a0dd404551996d8b716a99c` (`fix: restore route history and
-plain language`), pushed to `main`. Static deployment completed as Azure
-deployment `be2adbbb-209c-4b13-8f6b-8ecb1c111f1c`; the live document loads
-`app-v12.js` and the service worker cache is `barcode-intake-v12`.
+## What was done
 
-## What changed
+- Recorded cold first-screen and settled demo screenshots.
+- Audited every landing and README sentence, heading, and action.
+- Ran all 18 commands in `.factory/claims.json` separately from clean clone
+  `/tmp/barcode-review6-clean-F9iLLE`.
+- Exercised live demo edit/reset/exit behavior and confirmed a pre-existing
+  real card remained untouched.
+- Recorded the live request log: all requests were same-origin.
+- Rechecked every finding from reviews 1–5 against current production and
+  code, then checked all five polish reports and the previous handoff.
+- Crawled every rendered link; checked route metadata, the designed HTTP 404,
+  `/license` redirect, deep links, Back/Forward scroll and focus, response
+  headers, accessibility, and the product-specific visual system.
 
-- Route history now stores `scrollY` on every entry. Back/Forward restores the
-  saved reading position after rendering, while focus moves to and announces
-  the destination h1 without scrolling it into view.
-- Added an end-to-end regression that checks landing → intake → Back → Forward
-  scroll positions and heading focus at 390 px.
-- Rewrote the three review-5 README sentences in plain language: separated
-  real/sample cards, tested offline behavior, and deployment configuration.
-- Kept every earlier repair live: item-card terminology, explicit printable
-  codes, one-click isolated demo lifecycle, complete claim coverage, camera
-  decode proof, designed HTTP 404, explicit free/no-checkout facts, supplier
-  search guidance, legal/external links, and accurate preview fields.
-- Updated the catalog line to the verb-first, 49-character sentence: “Record
-  barcodes as private, printable item cards.”
+## Verification results
 
-## Verification
+- Exact claim commands: **18/18 passed**.
+- Second clean-clone aggregate `npm test`: **40/40 passed** and built `dist/`.
+- Production Playwright suite: **40/40 passed**.
+- The first clean aggregate passed 39/40; the camera-track teardown regression
+  timed out once, then passed five isolated reruns and the second aggregate.
+  This nondeterminism is review finding F-6-5.
+- `verify-url.sh`: passed with no console errors, one h1, one main, `lang=en`,
+  no missing image alternatives, and no unnamed buttons.
+- Link crawl: all HTTP destinations passed; unknown route returned 404 and
+  `/license` returned 301 to `/intake`.
+- Evidence: `.factory/qa-evidence/review-6/`.
 
-- Fresh clone `/tmp/barcode-intake-polish5-clean-Dti7Ez` at `91971a2`:
-  `npm ci` passed with zero audit vulnerabilities; all 18 exact claim commands
-  from `.factory/claims.json` passed independently; aggregate `npm test`
-  passed **40/40**.
-- The work-order build command `npm ci && npm test && npm run build` passed in
-  the deploy checkout. `dist/index.html` exists; app JS is 11.21 KB gzip and
-  CSS is 3.58 KB gzip.
-- Production `PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npm test`
-  passed **40/40**, covering every claim, privacy request logging, offline
-  reload, PWA cache update, camera cleanup/decoding, mobile keyboard/targets,
-  routing/history, 404, and axe integration.
-- `/opt/fleet/lib/verify-url.sh` passed cold production with no console errors,
-  title, `lang=en`, one h1, main landmark, zero images missing alt, and zero
-  unnamed buttons. See `.factory/qa-artifacts/polish-5-live/verify.json`.
-- Cold mobile screenshots of landing, demo, and 404 are in
-  `.factory/qa-artifacts/polish-5-live/` as `screenshot-mobile.png`,
-  `live-demo-mobile.png`, and `live-404-mobile.png`. They were visually
-  inspected after deployment.
-- Live headers confirm CSP is delivered as a response header, 404 remains HTTP
-  404, and `/license` remains HTTP 301 to `/intake`.
-- Mobile Lighthouse against the live URL: **100 Performance, 100
-  Accessibility, 100 Best Practices, 100 SEO**; LCP 1,247 ms, CLS 0, TBT 1
-  ms. See `lighthouse-mobile.json` in the same evidence directory.
+## Findings left for the next worker
 
-## Known gaps and next steps
+- F-6-1: register and positively test the advertised printable character set;
+  this is the unfinished part of F-1-2.
+- F-6-2: replace landing “every record” with consistent item-card wording;
+  this is the unfinished part of F-1-9.
+- F-6-3: replace landing “supplier file” with “supplier CSV”; this is the
+  unfinished part of F-1-23.
+- F-6-4: rename the Terms h1 so it identifies the page plainly.
+- F-6-5: make the fake-camera teardown regression deterministic and prove the
+  clean aggregate is stable across repeated runs.
 
-None. No runtime AI feature, paid checkout, or sync service is appropriate for
-this deterministic, privacy-first intake tool; supplier CSV matching and local
-CSV/JSON export cover the brief’s transfer needs.
-
-See `.factory/polish-5.md` for the complete finding-by-finding repair map.
+No AI, sync, billing, or additional transfer feature is recommended. The
+deterministic local workflow already includes supplier CSV matching, CSV
+export, and complete JSON backup/restore.
