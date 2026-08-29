@@ -1,1 +1,1 @@
-Turn barcodes into private, printable item cards.
+Record barcodes as private, printable item cards.

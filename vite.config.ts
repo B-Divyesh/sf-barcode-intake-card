@@ -34,13 +34,13 @@ export default defineConfig({
     target: 'es2022',
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/app-v11.js',
-        chunkFileNames: 'assets/[name]-v11.js',
+        entryFileNames: 'assets/app-v12.js',
+        chunkFileNames: 'assets/[name]-v12.js',
         manualChunks(id) {
           if (id.includes('@zxing')) return 'scanner';
           if (id.includes('jsbarcode')) return 'barcode';
         },
-        assetFileNames: (assetInfo) => assetInfo.names.some((name) => name.endsWith('.css')) ? 'assets/app-v11.css' : 'assets/[name]-[hash][extname]'
+        assetFileNames: (assetInfo) => assetInfo.names.some((name) => name.endsWith('.css')) ? 'assets/app-v12.css' : 'assets/[name]-[hash][extname]'
       }
     }
   }

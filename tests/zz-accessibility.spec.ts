@@ -31,7 +31,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v11.js', async (route) => {
+  await page.route('**/assets/app-v12.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();
@@ -111,6 +111,32 @@ test('the retired license URL redirects to the intake form', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Record a new item' })).toBeVisible();
 });
 
+test('browser Back and Forward restore each route scroll position and focus its heading', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(900);
+
+  // Dispatching from the header without Playwright scrolling it into view keeps
+  // this regression focused on the visitor's actual reading position.
+  await page.getByRole('link', { name: 'Intake', exact: true }).evaluate((link: HTMLAnchorElement) => link.click());
+  await expect(page).toHaveURL(/\/intake$/);
+  await expect(page.getByRole('heading', { name: 'Record a new item' })).toBeFocused();
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+
+  await page.evaluate(() => window.scrollTo(0, 420));
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(420);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'Turn scanned barcodes into item cards' })).toBeFocused();
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(900);
+
+  await page.goForward();
+  await expect(page).toHaveURL(/\/intake$/);
+  await expect(page.getByRole('heading', { name: 'Record a new item' })).toBeFocused();
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(420);
+});
+
 test('external Param Factory links say they leave the product', async ({ page }) => {
   for (const route of ['/', '/privacy', '/terms']) {
     await page.goto(route);
@@ -146,4 +172,12 @@ test('README calls npm run build a build command', () => {
   const readme = readFileSync('README.md', 'utf8');
   expect(readme).toContain('Build the deployable files with `npm run build`.');
   expect(readme).not.toContain('The exact deployment command is `npm run build`.');
+});
+
+test('README explains privacy, offline use, and deployment in plain language', () => {
+  const readme = readFileSync('README.md', 'utf8');
+  expect(readme).toContain('Your real cards and sample cards are stored separately in this browser.');
+  expect(readme).toContain('The app works offline after your first visit.');
+  expect(readme).toContain('`staticwebapp.config.json` sends app routes to the right page, returns the designed 404 page, and sets security headers.');
+  expect(readme).not.toMatch(/IndexedDB database|service worker caches the app shell|SPA routing|MIME types/);
 });

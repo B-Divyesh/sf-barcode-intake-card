@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.9';
+const BUILD = 'v1.0.10';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
@@ -29,10 +29,32 @@ function setMeta(title: string, description: string, canonicalPath: string): voi
   document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')?.setAttribute('content', description);
 }
 
+type RouteState = Record<string, unknown> & { scrollY?: number };
+
+function routeState(scrollY?: number): RouteState {
+  const state = history.state;
+  const existing = state && typeof state === 'object' && !Array.isArray(state) ? state as Record<string, unknown> : {};
+  return scrollY === undefined ? { ...existing } : { ...existing, scrollY: Math.max(0, Math.round(scrollY)) };
+}
+
+function savedScrollPosition(): number {
+  const value = routeState().scrollY;
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function saveScrollPosition(): void {
+  history.replaceState(routeState(window.scrollY), '');
+}
+
+function restoreScrollPosition(scrollY: number): void {
+  window.scrollTo({ top: Math.max(0, scrollY), left: 0, behavior: 'instant' as ScrollBehavior });
+}
+
 function navigate(path: string, replace = false): void {
-  if (replace) history.replaceState({}, '', path);
-  else history.pushState({}, '', path);
-  void render(true);
+  saveScrollPosition();
+  if (replace) history.replaceState(routeState(0), '', path);
+  else history.pushState({ scrollY: 0 }, '', path);
+  void render({ moveFocus: true, scrollY: 0 });
 }
 
 function shell(content: string, active = ''): string {
@@ -157,13 +179,15 @@ function notFound(): string {
   return shell(`<main id="main"><div class="page not-found"><p class="eyebrow">Error 404</p><h1 tabindex="-1">Page not found</h1><p class="lede">The address may be wrong, or the page may have moved.</p><a class="button" href="/intake" data-link>Return to the intake form</a></div></main>`);
 }
 
-async function render(moveFocus = false): Promise<void> {
+type RenderOptions = { moveFocus?: boolean; scrollY?: number };
+
+async function render({ moveFocus = false, scrollY }: RenderOptions = {}): Promise<void> {
   stopScanner();
   if (isDemo()) await seedDemo();
   const path = routeUrl().pathname.replace(/\/$/, '') || '/';
   if (path === '/license') {
-    history.replaceState({}, '', `/intake${routeUrl().search}`);
-    await render(moveFocus);
+    history.replaceState(routeState(0), '', `/intake${routeUrl().search}`);
+    await render({ moveFocus, scrollY: 0 });
     return;
   }
   let html: string;
@@ -180,9 +204,10 @@ async function render(moveFocus = false): Promise<void> {
   bindPage();
   if (path.startsWith('/print/')) void drawBarcode();
   if (moveFocus) {
-    scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    restoreScrollPosition(scrollY ?? 0);
     const heading = document.querySelector<HTMLElement>('main h1');
-    heading?.focus();
+    heading?.focus({ preventScroll: true });
     const announcer = document.querySelector('#route-announcer');
     if (announcer) announcer.textContent = heading?.textContent ?? '';
   }
@@ -474,7 +499,10 @@ document.addEventListener('click', (event) => {
   }
 });
 
-window.addEventListener('popstate', () => void render(true));
+window.history.scrollRestoration = 'manual';
+if (!Number.isFinite((history.state as RouteState | null)?.scrollY)) saveScrollPosition();
+window.addEventListener('scroll', saveScrollPosition, { passive: true });
+window.addEventListener('popstate', () => void render({ moveFocus: true, scrollY: savedScrollPosition() }));
 window.addEventListener('pagehide', stopScanner);
 window.addEventListener('online', () => { const status = document.querySelector('.status-line'); if (status) status.textContent = 'Back online. Local cards were available throughout.'; });
 window.addEventListener('offline', () => { const status = document.querySelector('.status-line'); if (status) status.textContent = 'Offline. You can keep working with local cards.'; });

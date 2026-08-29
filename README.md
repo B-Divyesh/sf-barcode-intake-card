@@ -47,9 +47,9 @@ Build the deployable files with `npm run build`. Static output lands in `dist/`,
 
 ## Data and privacy
 
-Real cards use IndexedDB database `barcode-intake-real`. Demo cards use `barcode-intake-demo`. The app sends no item, barcode, CSV, or photo data to a third party. It has no account, sync, checkout, or billing request.
+Your real cards and sample cards are stored separately in this browser. The app sends no item, barcode, CSV, or photo data to a third party. It has no account, sync, checkout, or billing request.
 
-The service worker caches the app shell. Export a JSON backup before clearing site data or moving devices. See `/privacy` and `/terms` in the app.
+The app works offline after your first visit. Export a JSON backup before clearing site data or moving devices. See `/privacy` and `/terms` in the app.
 
 ## Camera scanning
 
@@ -57,7 +57,7 @@ Camera scanning, manual entry, and exports are free to use. Choose **Scan with c
 
 ## Deployment
 
-Deploy `dist/` as a static site. `staticwebapp.config.json` provides SPA routing, the 404 response, security headers, and MIME types. The factory manages DNS and infrastructure.
+Deploy `dist/` as a static site. `staticwebapp.config.json` sends app routes to the right page, returns the designed 404 page, and sets security headers. The factory manages DNS and infrastructure.
 
 ## Project notes
 
