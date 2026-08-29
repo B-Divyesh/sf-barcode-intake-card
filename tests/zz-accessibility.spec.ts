@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 for (const route of ['/', '/demo', '/intake', '/records', '/privacy', '/terms']) {
   test(`page basics and axe: ${route}`, async ({ page }) => {
@@ -30,7 +31,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v10.js', async (route) => {
+  await page.route('**/assets/app-v11.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();
@@ -127,4 +128,22 @@ test('unknown documents return HTTP 404 with the designed recovery page', async 
   await expect(page.getByRole('link', { name: 'Return to the intake form' })).toBeVisible();
   await expect(page.locator('header, footer')).toHaveCount(2);
   await expect(page.locator('meta[name="description"], link[rel="canonical"], meta[property="og:title"], meta[name="twitter:title"]')).toHaveCount(4);
+});
+
+test('landing preview shows only real item-card fields and plain guidance', async ({ page }) => {
+  await page.goto('/');
+  const preview = page.locator('.preview-sheet');
+  await expect(preview).toContainText('Sample item card');
+  await expect(preview).toContainText('Location');
+  await expect(preview).toContainText('Quantity');
+  await expect(preview).toContainText('Notes');
+  await expect(preview).toContainText('Check bore before restocking.');
+  await expect(preview).not.toContainText(/Intake 0142|Ready to review|Stored locally/);
+  await expect(page.locator('.hero-figure figcaption')).toHaveText('Record mixed stock before choosing a full inventory system.');
+});
+
+test('README calls npm run build a build command', () => {
+  const readme = readFileSync('README.md', 'utf8');
+  expect(readme).toContain('Build the deployable files with `npm run build`.');
+  expect(readme).not.toContain('The exact deployment command is `npm run build`.');
 });

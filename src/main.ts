@@ -6,7 +6,7 @@ import type { CsvMatch, IntakeItem } from './types';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('The app root is missing.');
 
-const BUILD = 'v1.0.8';
+const BUILD = 'v1.0.9';
 const PRINTABLE_CODE = /^[\x20-\x7e]+$/;
 let csvMatches: CsvMatch[] = [];
 let lastFocus: HTMLElement | null = null;
@@ -71,14 +71,14 @@ function landing(): string {
         </div>
         <figure class="hero-figure">
           <picture><source media="(max-width: 760px)" srcset="/assets/receiving-desk-600.webp" type="image/webp"><source srcset="/assets/receiving-desk.webp" type="image/webp"><img src="/assets/receiving-desk.webp" width="900" height="600" alt="An engraved workshop desk with parts, a parcel, a scanner, and a blank intake card." fetchpriority="high" decoding="async"></picture>
-          <figcaption>Fig. 01 — Record mixed stock before choosing a full inventory system.</figcaption>
+          <figcaption>Record mixed stock before choosing a full inventory system.</figcaption>
         </figure>
       </div>
       <section class="section" aria-labelledby="preview-title">
         <div class="section-heading"><h2 id="preview-title">Preview an item card</h2><p>Review and update the item card before printing it.</p></div>
         <div class="preview-sheet" aria-label="Sample intake card preview">
-          <div><p class="eyebrow">Intake 0142</p><h3>608ZZ shielded bearing</h3><p>North Street Components</p><div class="barcode-display" aria-hidden="true"></div><p class="record-code">5901234123457</p></div>
-          <div class="preview-meta"><div><small>Location</small><strong>Bin A-14</strong></div><div><small>Quantity</small><strong>12</strong></div><div><small>Status</small><strong>Ready to review</strong></div><div><small>Privacy</small><strong>Stored locally</strong></div></div>
+          <div><p class="eyebrow">Sample item card</p><h3>608ZZ shielded bearing</h3><p>North Street Components</p><div class="barcode-display" aria-hidden="true"></div><p class="record-code">5901234123457</p></div>
+          <div class="preview-meta"><div><small>Location</small><strong>Bin A-14</strong></div><div><small>Quantity</small><strong>12</strong></div><div class="preview-notes"><small>Notes</small><strong>Check bore before restocking.</strong></div></div>
         </div>
       </section>
       <section class="section" aria-labelledby="how-title"><div class="section-heading"><h2 id="how-title">How it works</h2><p>Scan a barcode, type the code, or match a supplier CSV.</p></div><div class="steps"><div class="step"><h3>Capture the code</h3><p>Camera scanning fills the barcode field. You can also type English letters, numbers, spaces, and punctuation.</p></div><div class="step"><h3>Review the item</h3><p>Add its name, supplier, photo, quantity, and shelf location.</p></div><div class="step"><h3>Print or export the card</h3><p>Print one card or export every record as CSV or JSON.</p></div></div></section>

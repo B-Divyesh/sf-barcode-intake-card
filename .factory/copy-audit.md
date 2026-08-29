@@ -25,6 +25,10 @@ Counted with contractions and hyphenated terms as one word. Every landing senten
 | Camera scanning, manual entry, and exports are free to use. | 10 | pass |
 | The camera starts only after you choose Scan with camera. | 10 | pass |
 
+The preview uses the real card labels **Sample item card**, **Location**,
+**Quantity**, and **Notes**. Its sample note is “Check bore before
+restocking.” The hero caption has no decorative figure label.
+
 No sentence exceeds 22 words. No banned word appears.
 
 ## Terminology

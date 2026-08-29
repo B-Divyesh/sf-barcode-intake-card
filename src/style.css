@@ -75,6 +75,7 @@ p { line-height: 1.55; }
 .preview-meta { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--ink); border-left: 1px solid var(--ink); }
 .preview-meta div { padding: 12px; border-right: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
 .preview-meta small { display: block; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .1em; }
+.preview-meta .preview-notes { grid-column: 1 / -1; }
 .steps { counter-reset: step; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--ink); }
 .step { counter-increment: step; padding: 28px; min-height: 210px; border-right: 1px solid var(--ink); }
 .step:last-child { border-right: 0; }

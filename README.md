@@ -43,7 +43,7 @@ npm run build
 
 `npm test` builds the production app, starts the preview server, and runs the Playwright claim, accessibility, mobile, and console checks. Chromium for Playwright 1.58.2 is required.
 
-The exact deployment command is `npm run build`. Static output lands in `dist/`, with `dist/index.html` at its root.
+Build the deployable files with `npm run build`. Static output lands in `dist/`, with `dist/index.html` at its root.
 
 ## Data and privacy
 
