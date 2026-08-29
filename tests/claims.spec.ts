@@ -158,6 +158,7 @@ test('@claim:json-backup exports and restores every saved field including the ph
   await page.getByLabel('Review notes').fill('Every saved field must return.');
   await page.getByLabel('Item photo').setInputFiles({ name: 'backup.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64') });
   await page.getByRole('button', { name: 'Save item card' }).click();
+  await expect(page.getByRole('heading', { name: 'Print one item card' })).toBeVisible();
   await page.goto('/records');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup' }).click();
