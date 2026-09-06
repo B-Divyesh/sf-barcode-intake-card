@@ -1,77 +1,70 @@
-# Handoff — adversarial review 7
+# Handoff — review 8
 
-## Review 7 outcome
+## Result
 
-Review 7 passed with zero findings. No product code changed in this review.
-Fresh clean-clone claim commands passed 18/18; the live aggregate suite passed
-41 tests; `npm run build` produced `dist/`. Fresh live phone/desktop contexts
-confirmed first-read clarity, isolated reset/exit/re-entry demo behavior,
-same-origin privacy behavior, routes, metadata, HTTP 404, and no console
-errors. Mobile Lighthouse recorded LCP 1.65 s, CLS 0, and TBT 0 (the browser
-crashed only after metric capture while taking its final screenshot).
+**FAIL.** Review 8 found one minor issue and zero untested claims. No product
+code changed.
 
-See `.factory/review-7.md` for full evidence and all historical finding
-confirmations. No known gaps remain.
+The required first-screen outcome sentence renders at 14 px, and the three
+privacy, offline, and price facts render at 13 px. The supplied design rules
+and `.factory/design.md` require body copy of at least 16 px. See
+`.factory/review-8.md` for the evidence and required change.
 
-## Outcome
+## Product and documentation versions
 
-Released Barcode Intake Card v1.0.11 at
-<https://barcode-intake-card.sociobot.in>. The repair commit is
-`66b92f8420b519b87cf50e747cf116fca38a4f04` (`fix: close review six
-acceptance gaps`), deployed as Azure Static Web Apps deployment
-`c95c1aea-5ad5-4223-8174-2030dd74a4c4`.
+- Live URL: <https://barcode-intake-card.sociobot.in>
+- Implementation reviewed: `66b92f8420b519b87cf50e747cf116fca38a4f04`
+- Documentation baseline: `21471be5ffa43d60f2a456cc9000a4be4d7854e4`
+- Live build: v1.0.11, `app-v13`, service-worker cache
+  `barcode-intake-v13`
 
-All five review-6 findings and every previously recorded finding are closed.
-The artifact remains a local-first Vite/TypeScript PWA with its monochrome
-workshop-broadsheet visual system, one-click isolated demo, no tracking, and
-no third-party data path.
+All checked runtime files were byte-identical to the clean build from the
+implementation candidate. Changes after that implementation are reports and
+evidence only.
 
-## What changed
+## Verification completed
 
-- Registered the printable Code 128 character-set promise in
-  `.factory/claims.json`. Its exact claim test rejects unsupported script input,
-  then saves, prints, and decodes `PART A-12/3`.
-- Repaired the two remaining landing terminology mismatches: **all cards**
-  replaces “every record,” and **supplier CSV** replaces “supplier file.”
-- Renamed the Terms h1 to **Terms for using Barcode Intake Card** and added a
-  title/h1 regression.
-- Replaced the flaky fake-camera dependency with a delayed deterministic
-  `MediaStream` fixture. The product now waits for a live video track before
-  announcing “Camera ready”; Escape and route teardown both end the fixture's
-  track.
-- Cache-busted the repair to v1.0.11 / `app-v13` / `barcode-intake-v13`, and
-  updated the manifest start URL and 404 build label.
-- Updated the verb-first catalog description to “Create private, printable
-  item cards from barcodes.”
+- Clean detached checkout: `npm ci` passed with zero audit vulnerabilities.
+- Every one of the 18 commands in `.factory/claims.json` passed independently.
+- Clean `npm test`: 41/41 passed.
+- Production-backed `npm test`: 41/41 passed.
+- `npm run build`: passed and produced `dist/index.html`.
+- Factory URL verification passed with no console errors.
+- Fresh phone and desktop first-read checks passed for job, audience, action,
+  first-screen fit, same-origin requests, and no overflow.
+- One-click demo, persistent label, realistic samples, edit, print, reset,
+  exit, re-entry, and real/demo isolation passed.
+- Empty, unsupported, negative, zero, malformed CSV, corrupt photo, denied
+  camera, invalid backup, deletion cancellation, and deletion recovery paths
+  passed.
+- Settled axe scans found no violations on all app routes, sample print, and
+  the designed HTTP 404. Keyboard, focus return, 44 px targets, route history,
+  and reduced motion passed.
+- Offline navigation and reload passed. The versioned worker and update-ready
+  UI are present.
+- Fresh mobile Lighthouse: Performance 96, Accessibility 100, Best Practices
+  100, SEO 100; LCP 1.22 s, CLS 0, TBT 242 ms.
+- All earlier review and verification findings were checked again. None
+  regressed. Review 8's text-size issue is new.
 
-## Verification
+## How to verify
 
-- Fresh clone `/tmp/barcode-intake-polish6-clean-w9DXb9` at `66b92f8`:
-  `npm ci` passed with zero audit vulnerabilities. All **18** exact commands
-  declared in `.factory/claims.json` passed independently.
-- Local `npm test` passed **41/41** three consecutive times with zero retries;
-  `npm run build` produced `dist/index.html`. Initial JS is 33.79 KB raw /
-  11.36 KB gzip, and CSS is 11.76 KB raw / 3.58 KB gzip.
-- Production `PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npm test`
-  passed **41/41**, including claims, offline/PWA, local-only request logging,
-  camera lifecycle, mobile targets, keyboard/focus/routing, HTTP 404, and axe.
-- `verify-url.sh` passed cold production: title, `lang=en`, one h1, main
-  landmark, image alternatives, named buttons, and no console error. See
-  `.factory/qa-artifacts/polish-6-live/verify/verify.json`.
-- Cold live recheck passed: root loads `app-v13`, `?demo=1` immediately shows
-  three cards plus the persistent “nothing is saved” banner, Reset demo, and
-  Start for real; Terms has its literal title/h1; unknown URLs are HTTP 404;
-  `/license` is HTTP 301 to `/intake`. See
-  `.factory/qa-artifacts/polish-6-live/live-check.json` and screenshots in
-  that directory.
-- Live mobile Lighthouse: **99 Performance, 100 Accessibility, 100 Best
-  Practices, 100 SEO**; LCP 1,603 ms, CLS 0, TBT 0. See
-  `.factory/qa-artifacts/polish-6-live/lighthouse-mobile-final.json`.
+```bash
+npm ci
+npm test
+npm run build
+PLAYWRIGHT_BASE_URL=https://barcode-intake-card.sociobot.in npm test
+```
 
-## Known gaps and next steps
+Run each command in `.factory/claims.json` separately before accepting a new
+candidate. Open the live root in fresh 390 × 844 and desktop contexts, and
+check the first screen without scrolling.
 
-None. No AI, sync, or billing feature is appropriate for this deterministic,
-private barcode-intake workflow. Supplier CSV matching plus CSV and JSON
-export cover the relevant transfer needs.
+## Known gap and next step
 
-See `.factory/polish-6.md` for the complete finding-by-finding repair map.
+Raise `.action-note` and `.facts` to at least 16 px at every width. Keep the
+action, outcome, and three facts inside the first 390 × 844 screen. Rerun phone
+layout, 200% text resize, settled axe, Lighthouse, and all claim commands.
+
+Do not mark the product PASS until F-8-1 is fixed and the next independent
+review reports zero findings.
