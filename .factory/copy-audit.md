@@ -1,8 +1,12 @@
-# Copy audit — polish 6
+# Copy audit — repair 5
 
 Counted with contractions, hyphenated terms, file names, and version numbers as
 one word. Every visitor-facing sentence on the landing page has 22 words or
 fewer and contains no banned plain-words term.
+
+The wording did not change in repair 5. Browser checks at 390 × 844 and
+1440 × 900 confirm that the action outcome and all three required facts render
+at 16 px. The complete first-screen text remains above the fold at both sizes.
 
 ## Landing page
 
