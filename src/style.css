@@ -59,8 +59,8 @@ p { line-height: 1.55; }
 .hero { padding-top: clamp(40px, 8vw, 88px); }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(280px, .88fr); gap: clamp(32px, 6vw, 80px); align-items: start; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 28px 0 22px; }
-.action-note { max-width: 230px; margin: 0; color: var(--muted); font-size: 14px; }
-.facts { list-style: none; padding: 16px 0 0; margin: 0; border-top: 1px solid var(--rule); display: grid; gap: 7px; font-family: ui-monospace, monospace; font-size: 13px; }
+.action-note { max-width: 250px; margin: 0; color: var(--muted); font-size: 16px; }
+.facts { list-style: none; padding: 16px 0 0; margin: 0; border-top: 1px solid var(--rule); display: grid; gap: 7px; font-family: ui-monospace, monospace; font-size: 16px; }
 .facts li::before { content: '■'; color: var(--red); margin-right: 10px; font-size: 8px; }
 .hero-figure { margin: 0; border: 1px solid var(--ink); padding: 8px; background: var(--sheet); box-shadow: var(--shadow); transform: rotate(1deg); }
 .hero-figure picture, .hero-figure img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; filter: grayscale(1) contrast(1.08); }

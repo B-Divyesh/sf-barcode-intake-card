@@ -38,13 +38,44 @@ test('mobile intake fits at 390 pixels and supports keyboard entry', async ({ pa
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
+test('required first-screen copy is legible and fits phone and desktop viewports', async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+
+    const result = await page.evaluate(() => {
+      const requiredCopy = [
+        document.querySelector<HTMLElement>('.action-note'),
+        ...document.querySelectorAll<HTMLElement>('.facts li')
+      ];
+      const heroText = document.querySelector<HTMLElement>('.hero-grid > div:first-child');
+      return {
+        renderedCopy: requiredCopy.map((element) => ({
+          text: element?.innerText ?? '',
+          fontSize: element ? Number.parseFloat(getComputedStyle(element).fontSize) : 0,
+          visible: element ? Boolean(element.offsetWidth || element.offsetHeight) : false
+        })),
+        heroBottom: heroText?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
+        viewportHeight: window.innerHeight,
+        scrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth
+      };
+    });
+
+    expect(result.renderedCopy).toHaveLength(4);
+    expect(result.renderedCopy.every(({ fontSize, visible }) => visible && fontSize >= 16)).toBe(true);
+    expect(result.heroBottom).toBeLessThanOrEqual(result.viewportHeight);
+    expect(result.scrollWidth).toBeLessThanOrEqual(result.viewportWidth);
+  }
+});
+
 test('@regression:mobile-lcp hero is discovered before JavaScript and uses the mobile asset at its intrinsic ratio', async ({ page }) => {
   await page.setViewportSize({ width: 412, height: 823 });
   let mobileHeroRequested = false;
   page.on('request', (request) => {
     if (new URL(request.url()).pathname === '/assets/receiving-desk-600.webp') mobileHeroRequested = true;
   });
-  await page.route('**/assets/app-v13.js', async (route) => {
+  await page.route('**/assets/app-v14.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 750));
     expect(mobileHeroRequested, 'the initial HTML must discover the mobile hero before the app module runs').toBe(true);
     await route.continue();
@@ -63,7 +94,7 @@ test('@regression:mobile-lcp hero is discovered before JavaScript and uses the m
 });
 
 async function installDelayedCameraFixture(page: Page): Promise<void> {
-  await page.route('**/assets/scanner-v13.js', async (route) => {
+  await page.route('**/assets/scanner-v14.js', async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
       body: `export class BrowserMultiFormatReader {
